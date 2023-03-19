@@ -14,7 +14,7 @@ using System.Windows.Input;
 using UtfUnknown;
 using VisualGrep.Models;
 using VisualGrep.Utls;
-
+using System.Reactive.Linq;
 
 namespace VisualGrep.ViewModels
 {
@@ -23,6 +23,7 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> FolderPath { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<string> SearchText { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<string> SearchFileName { get; } = new ReactiveProperty<string>(string.Empty);
+        public ReadOnlyReactiveProperty<string?> SearchTextWatermark { get; }
         public ReactiveProperty<bool> SearchEnable { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<bool> IncludeSubfolders { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<bool> UseRegex { get; } = new ReactiveProperty<bool>(false);
@@ -38,6 +39,7 @@ namespace VisualGrep.ViewModels
 
         public MainWindowViewModel()
         {
+            SearchTextWatermark = UseRegex.Select(x => x ? "正規表現" : "検索文字列").ToReadOnlyReactiveProperty();
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
