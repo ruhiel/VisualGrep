@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
+using UtfUnknown;
 using VisualGrep.Models;
 using VisualGrep.Utls;
 
@@ -17,14 +18,22 @@ namespace VisualGrep.ViewModels
     {
         public ReactiveProperty<string> FolderPath { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<string> SearchText { get; } = new ReactiveProperty<string>(string.Empty);
+
+        public ReactiveProperty<bool> SearchButtonEnable { get; } = new ReactiveProperty<bool>(true);
+
         public ReactiveCommand SearchCommand { get; } = new ReactiveCommand();
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
+
+
 
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             SearchCommand.Subscribe(async e =>
             {
+                SearchButtonEnable.Value = false;
                 LineInfoList.Clear();
 
                 if (FolderPath.Value == string.Empty)
@@ -38,7 +47,6 @@ namespace VisualGrep.ViewModels
                 }
 
                 var files = FileUtils.GetAllFiles(FolderPath.Value).Select((value, index) => value)
-                .Where(x => x.EndsWith(".txt"))
                 .ToList();
 
                 await Task.Run(async () =>
@@ -54,6 +62,8 @@ namespace VisualGrep.ViewModels
                         }
                     }
                 });
+
+                SearchButtonEnable.Value = true;
             });
         }
 
@@ -62,15 +72,28 @@ namespace VisualGrep.ViewModels
             Func<string, string, List<LineInfo>> action = (fileName, text) =>
             {
                 var list = new List<LineInfo>();
-                //ファイルをオープンする
-                using (StreamReader sr = new StreamReader(fileName, Encoding.UTF8))
+
+                DetectionResult charsetDetectedResult;
+
+                using (var stream = new FileStream(fileName, FileMode.Open))
+                {
+                    charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
+                }
+
+                if(charsetDetectedResult.Detected == null)
+                {
+                    return list;
+                }
+
+                // ファイルをオープンする
+                using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
                 {
                     int lineNo = 1;
                     while (0 <= sr.Peek())
                     {
                         var line = sr.ReadLine();
 
-                        if(line != null && line.Contains(text))
+                        if (line != null && line.Contains(text))
                         {
                             var info = new LineInfo();
                             info.FilePath = Path.GetDirectoryName(fileName);
