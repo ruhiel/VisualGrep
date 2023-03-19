@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Data;
 using UtfUnknown;
 using VisualGrep.Models;
@@ -18,11 +19,16 @@ namespace VisualGrep.ViewModels
     {
         public ReactiveProperty<string> FolderPath { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<string> SearchText { get; } = new ReactiveProperty<string>(string.Empty);
+        public ReactiveProperty<string> SearchFileName { get; } = new ReactiveProperty<string>(string.Empty);
 
         public ReactiveProperty<bool> SearchButtonEnable { get; } = new ReactiveProperty<bool>(true);
 
         public ReactiveCommand SearchCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand<DragEventArgs> DropCommand { get; } = new ReactiveCommand<DragEventArgs>();
+        public ReactiveCommand<DragEventArgs> PreviewDragOverCommand { get; } = new ReactiveCommand<DragEventArgs>();
+
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
+        public ReactiveProperty<string> SearchFilePath { get; } = new ReactiveProperty<string>(string.Empty);
 
         public MainWindowViewModel()
         {
@@ -44,8 +50,10 @@ namespace VisualGrep.ViewModels
                     return;
                 }
 
-                var files = FileUtils.GetAllFiles(FolderPath.Value).Select((value, index) => value)
-                .ToList();
+                var files = FileUtils.GetAllFiles(FolderPath.Value)
+                    .Select((value, index) => value)
+                    .Where(x => SearchFileName.Value == string.Empty ? true : x.Contains(SearchFileName.Value))
+                    .ToList();
 
                 await Task.Run(async () =>
                 {
@@ -53,6 +61,7 @@ namespace VisualGrep.ViewModels
                     foreach (var file in files)
                     {
                         //10ファイルパスだとすぐに終わってしまう為少し待たせる
+                        SearchFilePath.Value = file;
                         var list = await SearchFile(file, SearchText.Value);
                         foreach(var info in list)
                         {
@@ -61,7 +70,35 @@ namespace VisualGrep.ViewModels
                     }
                 });
 
+                SearchFilePath.Value = string.Empty;
                 SearchButtonEnable.Value = true;
+            });
+
+            DropCommand.Subscribe(e =>
+            {
+                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if(files.Any())
+                {
+                    var dir = Path.GetDirectoryName(files.First());
+
+                    if(dir != null)
+                    {
+                        FolderPath.Value = dir;
+                    }
+
+                    var extension = Path.GetExtension(files.First());
+
+                    if (extension != null)
+                    {
+                        SearchFileName.Value = extension;
+                    }
+                }
+            });
+
+            PreviewDragOverCommand.Subscribe(e =>
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = e.Data.GetDataPresent(DataFormats.FileDrop);
             });
         }
 

@@ -4,35 +4,50 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VisualGrep"
-        xmlns:vm="clr-namespace:VisualGrep.ViewModels"  
+        xmlns:vm="clr-namespace:VisualGrep.ViewModels"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:rp="clr-namespace:Reactive.Bindings.Interactivity;assembly=ReactiveProperty.WPF"
         mc:Ignorable="d"
         xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"                 
         Title="VisualGrep"
         TitleCharacterCasing="Normal"
         Height="600"
         Width="1000"
         SaveWindowPosition="True"
         BorderThickness="1"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        AllowDrop="True">
     <mah:MetroWindow.DataContext>
         <vm:MainWindowViewModel/>
     </mah:MetroWindow.DataContext>
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="PreviewDragOver">
+            <rp:EventToReactiveCommand Command="{Binding PreviewDragOverCommand}"/>
+        </i:EventTrigger>
+        <i:EventTrigger EventName="Drop">
+            <rp:EventToReactiveCommand Command="{Binding DropCommand}"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
             <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="8*"/>
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" Text="{Binding FolderPath.Value}"/>
+            <TextBox Grid.Column="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value}"/>
             <Button Grid.Column="1" Content="検索" Command="{Binding SearchCommand}" IsEnabled="{Binding SearchButtonEnable.Value}"/>
         </Grid>
-        <TextBox Grid.Row="1" Text="{Binding SearchText.Value}"/>
-        <DataGrid Grid.Row="2" Margin="10" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False">
+        <TextBox Grid.Row="1" Controls:TextBoxHelper.Watermark="検索文字列" Text="{Binding SearchText.Value}"/>
+        <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}"/>
+        <DataGrid Grid.Row="3" Margin="10" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="ファイル名" Width="120" Binding="{Binding FileName}"/>
                 <DataGridTextColumn Header="場所" Width="120" Binding="{Binding FilePath}"/>
@@ -40,5 +55,6 @@
                 <DataGridTextColumn Header="文字列" Width="*" Binding="{Binding Text}"/>
             </DataGrid.Columns>
         </DataGrid>
+        <TextBlock Grid.Row="4" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
     </Grid>
 </mah:MetroWindow>
