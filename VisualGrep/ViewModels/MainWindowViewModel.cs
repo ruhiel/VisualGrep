@@ -24,8 +24,6 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand SearchCommand { get; } = new ReactiveCommand();
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
 
-
-
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
