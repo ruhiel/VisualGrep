@@ -7,7 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using UtfUnknown;
 using VisualGrep.Models;
 using VisualGrep.Utls;
@@ -21,11 +23,13 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> SearchText { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<string> SearchFileName { get; } = new ReactiveProperty<string>(string.Empty);
 
-        public ReactiveProperty<bool> SearchButtonEnable { get; } = new ReactiveProperty<bool>(true);
+        public ReactiveProperty<bool> SearchEnable { get; } = new ReactiveProperty<bool>(true);
 
         public ReactiveCommand SearchCommand { get; } = new ReactiveCommand();
         public ReactiveCommand<DragEventArgs> DropCommand { get; } = new ReactiveCommand<DragEventArgs>();
         public ReactiveCommand<DragEventArgs> PreviewDragOverCommand { get; } = new ReactiveCommand<DragEventArgs>();
+        public ReactiveProperty<LineInfo> SelectedLineInfo { get; } = new ReactiveProperty<LineInfo>();
+        public ReactiveCommand<MouseButtonEventArgs> LineInfoMouseDoubleClickCommand { get; } = new ReactiveCommand<MouseButtonEventArgs>();
 
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
         public ReactiveProperty<string> SearchFilePath { get; } = new ReactiveProperty<string>(string.Empty);
@@ -37,7 +41,7 @@ namespace VisualGrep.ViewModels
 
             SearchCommand.Subscribe(async e =>
             {
-                SearchButtonEnable.Value = false;
+                SearchEnable.Value = false;
                 LineInfoList.Clear();
 
                 if (FolderPath.Value == string.Empty)
@@ -71,7 +75,7 @@ namespace VisualGrep.ViewModels
                 });
 
                 SearchFilePath.Value = string.Empty;
-                SearchButtonEnable.Value = true;
+                SearchEnable.Value = true;
             });
 
             DropCommand.Subscribe(e =>
@@ -99,6 +103,15 @@ namespace VisualGrep.ViewModels
             {
                 e.Effects = DragDropEffects.Copy;
                 e.Handled = e.Data.GetDataPresent(DataFormats.FileDrop);
+            });
+
+            LineInfoMouseDoubleClickCommand.Subscribe(e =>
+            {
+                var proc = new System.Diagnostics.Process();
+
+                proc.StartInfo.FileName = SelectedLineInfo.Value.FullPath;
+                proc.StartInfo.UseShellExecute = true;
+                proc.Start();
             });
         }
 

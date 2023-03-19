@@ -1,6 +1,7 @@
 ﻿using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,6 +36,11 @@ namespace VisualGrep.Models
         {
             get { return _Text; }
             set { SetProperty(ref _Text, value); }
+        }
+
+        public string FullPath
+        {
+            get { return Path.Combine(FilePath, FileName); }
         }
     }
 }
