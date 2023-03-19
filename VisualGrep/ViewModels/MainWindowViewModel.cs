@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,9 +23,10 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> FolderPath { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<string> SearchText { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<string> SearchFileName { get; } = new ReactiveProperty<string>(string.Empty);
-
         public ReactiveProperty<bool> SearchEnable { get; } = new ReactiveProperty<bool>(true);
-
+        public ReactiveProperty<bool> IncludeSubfolders { get; } = new ReactiveProperty<bool>(true);
+        public ReactiveProperty<bool> UseRegex { get; } = new ReactiveProperty<bool>(false);
+        public ReactiveProperty<bool> CaseSensitive { get; } = new ReactiveProperty<bool>(false);
         public ReactiveCommand SearchCommand { get; } = new ReactiveCommand();
         public ReactiveCommand<DragEventArgs> DropCommand { get; } = new ReactiveCommand<DragEventArgs>();
         public ReactiveCommand<DragEventArgs> PreviewDragOverCommand { get; } = new ReactiveCommand<DragEventArgs>();
@@ -54,7 +56,7 @@ namespace VisualGrep.ViewModels
                     return;
                 }
 
-                var files = FileUtils.GetAllFiles(FolderPath.Value)
+                var files = FileUtils.GetAllFiles(FolderPath.Value, IncludeSubfolders.Value)
                     .Select((value, index) => value)
                     .Where(x => SearchFileName.Value == string.Empty ? true : x.Contains(SearchFileName.Value))
                     .ToList();
@@ -141,10 +143,10 @@ namespace VisualGrep.ViewModels
                     {
                         var line = sr.ReadLine();
 
-                        if (line != null && line.Contains(text))
+                        if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
                         {
                             var info = new LineInfo();
-                            info.FilePath = Path.GetDirectoryName(fileName);
+                            info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
                             info.FileName = Path.GetFileName(fileName);
                             info.Line = lineNo.ToString();
                             info.Text = line;
@@ -159,6 +161,22 @@ namespace VisualGrep.ViewModels
             };
 
             return Task.Factory.StartNew(() => action(fileName, text));
+        }
+
+        private bool MatchText(string? line, string text, bool useRegex, bool ignoreCase)
+        {
+            if(useRegex)
+            {
+                var regexOption = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+
+                return !string.IsNullOrEmpty(line) && Regex.IsMatch(line, text, regexOption);
+            }
+            else
+            {
+                var stringComparison = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal;
+
+                return !string.IsNullOrEmpty(line) && line.IndexOf(text, stringComparison) >= 0;
+            }
         }
     }
 }

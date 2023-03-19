@@ -34,6 +34,7 @@
             <RowDefinition Height="30"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
@@ -47,10 +48,15 @@
         </Grid>
         <TextBox Grid.Row="1" Controls:TextBoxHelper.Watermark="検索文字列" Text="{Binding SearchText.Value}" IsEnabled="{Binding SearchEnable.Value}"/>
         <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEnabled="{Binding SearchEnable.Value}"/>
-        <DataGrid Grid.Row="3" Margin="10" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
+        <StackPanel Grid.Row="3" Orientation="Horizontal">
+            <CheckBox Content="サブフォルダを含める" IsChecked="{Binding IncludeSubfolders.Value}" Margin="0,0,10,0"/>
+            <CheckBox Content="正規表現" IsChecked="{Binding UseRegex.Value}" Margin="0,0,10,0"/>
+            <CheckBox Content="大文字小文字を区別する" IsChecked="{Binding CaseSensitive.Value}"/>
+        </StackPanel>
+        <DataGrid Grid.Row="4" Margin="10" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="ファイル名" Width="120" Binding="{Binding FileName}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="場所" Width="120" Binding="{Binding FilePath}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="ファイル名" Width="150" Binding="{Binding FileName}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="場所" Width="150" Binding="{Binding FilePath}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="行" Width="60" Binding="{Binding Line}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="文字列" Width="*" Binding="{Binding Text}" IsReadOnly="True"/>
             </DataGrid.Columns>
@@ -60,6 +66,6 @@
                 </i:EventTrigger>
             </i:Interaction.Triggers>
         </DataGrid>
-        <TextBlock Grid.Row="4" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Row="5" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
     </Grid>
 </mah:MetroWindow>

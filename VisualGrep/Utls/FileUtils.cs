@@ -22,8 +22,12 @@ namespace VisualGrep.Utls
             @"C:\Program Files\windows nt\アクセサリ",
             @"C:\ProgramData\Application Data", //よくある隠しフォルダ
         };
+        public static IEnumerable<string> GetAllFiles(string folderPath, bool includeSubfolders = true)
+        {
+            return includeSubfolders == false ? Directory.EnumerateFiles(folderPath) : GetAllFilesEnumerate(folderPath);
+        }
 
-        public static IEnumerable<string> GetAllFiles(string folderPath)
+        public static IEnumerable<string> GetAllFilesEnumerate(string folderPath)
         {
             var directories = Enumerable.Empty<string>();
 
@@ -31,7 +35,7 @@ namespace VisualGrep.Utls
             {
                 directories = Directory.EnumerateDirectories(folderPath)
                     .Where(x => _exceptFolder.All(y => !x.StartsWith(y, StringComparison.CurrentCultureIgnoreCase)))
-                    .SelectMany(GetAllFiles);
+                    .SelectMany(GetAllFilesEnumerate);
             }
             catch
             {
