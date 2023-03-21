@@ -35,41 +35,58 @@
     </i:Interaction.Triggers>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="120"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="8*"/>
-                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEnabled="{Binding SearchEnable.Value}"/>
-            <Button Grid.Column="1" Content="検索" Command="{Binding SearchCommand}" IsEnabled="{Binding SearchEnable.Value}"/>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <TextBox Grid.Row="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEnabled="{Binding SearchEnable.Value}"/>
+                <TextBox Grid.Row="1" Controls:TextBoxHelper.Watermark="{Binding SearchTextWatermark.Value}" Text="{Binding SearchText.Value}" IsEnabled="{Binding SearchEnable.Value}"/>
+                <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEnabled="{Binding SearchEnable.Value}"/>
+                <StackPanel Grid.Row="3" Orientation="Horizontal">
+                    <CheckBox Content="サブフォルダを含める" IsChecked="{Binding IncludeSubfolders.Value}" Margin="0,0,10,0"/>
+                    <CheckBox Content="正規表現" IsChecked="{Binding UseRegex.Value}" Margin="0,0,10,0"/>
+                    <CheckBox Content="大文字小文字を区別する" IsChecked="{Binding CaseSensitive.Value}"/>
+                </StackPanel>
+            </Grid>
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <Button Grid.Row="0" Content="検索" Command="{Binding SearchCommand}" IsEnabled="{Binding SearchEnable.Value}"/>
+                <Button Grid.Row="1" Content="停止" Command="{Binding StopCommand}" IsEnabled="{Binding SearchStopEnable.Value}"/>
+            </Grid>
         </Grid>
-        <TextBox Grid.Row="1" Controls:TextBoxHelper.Watermark="{Binding SearchTextWatermark.Value}" Text="{Binding SearchText.Value}" IsEnabled="{Binding SearchEnable.Value}"/>
-        <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEnabled="{Binding SearchEnable.Value}"/>
-        <StackPanel Grid.Row="3" Orientation="Horizontal">
-            <CheckBox Content="サブフォルダを含める" IsChecked="{Binding IncludeSubfolders.Value}" Margin="0,0,10,0"/>
-            <CheckBox Content="正規表現" IsChecked="{Binding UseRegex.Value}" Margin="0,0,10,0"/>
-            <CheckBox Content="大文字小文字を区別する" IsChecked="{Binding CaseSensitive.Value}"/>
-        </StackPanel>
-        <DataGrid Grid.Row="4" Margin="10" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="ファイル名" Width="150" Binding="{Binding FileName}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="場所" Width="150" Binding="{Binding FilePath}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="行" Width="60" Binding="{Binding Line}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="文字列" Width="*" Binding="{Binding Text}" IsReadOnly="True"/>
-            </DataGrid.Columns>
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="MouseDoubleClick">
-                    <rp:EventToReactiveCommand Command="{Binding LineInfoMouseDoubleClickCommand}"/>
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-        </DataGrid>
-        <TextBlock Grid.Row="5" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="8*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DataGrid Grid.Row="0" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ファイル名" Width="150" Binding="{Binding FileName}" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="場所" Width="150" Binding="{Binding FilePath}" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="行" Width="60" Binding="{Binding Line}" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="文字列" Width="*" Binding="{Binding Text}" IsReadOnly="True"/>
+                </DataGrid.Columns>
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="MouseDoubleClick">
+                        <rp:EventToReactiveCommand Command="{Binding LineInfoMouseDoubleClickCommand}"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </DataGrid>
+            <TextBlock Grid.Row="1" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
+        </Grid>
     </Grid>
 </mah:MetroWindow>

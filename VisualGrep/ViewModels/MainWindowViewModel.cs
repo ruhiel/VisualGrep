@@ -15,6 +15,7 @@ using UtfUnknown;
 using VisualGrep.Models;
 using VisualGrep.Utls;
 using System.Reactive.Linq;
+using System.Threading;
 
 namespace VisualGrep.ViewModels
 {
@@ -25,23 +26,29 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> SearchFileName { get; } = new ReactiveProperty<string>(string.Empty);
         public ReadOnlyReactiveProperty<string?> SearchTextWatermark { get; }
         public ReactiveProperty<bool> SearchEnable { get; } = new ReactiveProperty<bool>(true);
+        public ReadOnlyReactiveProperty<bool> SearchStopEnable { get; }
         public ReactiveProperty<bool> IncludeSubfolders { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<bool> UseRegex { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> CaseSensitive { get; } = new ReactiveProperty<bool>(false);
         public ReactiveCommand SearchCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand StopCommand { get; } = new ReactiveCommand();
         public ReactiveCommand<DragEventArgs> DropCommand { get; } = new ReactiveCommand<DragEventArgs>();
         public ReactiveCommand<DragEventArgs> PreviewDragOverCommand { get; } = new ReactiveCommand<DragEventArgs>();
         public ReactiveProperty<LineInfo> SelectedLineInfo { get; } = new ReactiveProperty<LineInfo>();
         public ReactiveCommand<MouseButtonEventArgs> LineInfoMouseDoubleClickCommand { get; } = new ReactiveCommand<MouseButtonEventArgs>();
-
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
         public ReactiveProperty<string> SearchFilePath { get; } = new ReactiveProperty<string>(string.Empty);
+        
+        private CancellationTokenSource _CancellationTokenSource = new CancellationTokenSource();
 
         public MainWindowViewModel()
         {
-            SearchTextWatermark = UseRegex.Select(x => x ? "正規表現" : "検索文字列").ToReadOnlyReactiveProperty();
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            SearchTextWatermark = UseRegex.Select(x => x ? "正規表現" : "検索文字列").ToReadOnlyReactiveProperty();
+
+            SearchStopEnable = SearchEnable.Select(x => !x).ToReadOnlyReactiveProperty();
 
             SearchCommand.Subscribe(async e =>
             {
@@ -63,23 +70,37 @@ namespace VisualGrep.ViewModels
                     .Where(x => SearchFileName.Value == string.Empty ? true : x.Contains(SearchFileName.Value))
                     .ToList();
 
-                await Task.Run(async () =>
+                try
                 {
-                    //同期処理でリスト化しているのでここでUIスレッドが固まらなくなる
-                    foreach (var file in files)
+                    await Task.Run(async () =>
                     {
-                        //10ファイルパスだとすぐに終わってしまう為少し待たせる
-                        SearchFilePath.Value = file;
-                        var list = await SearchFile(file, SearchText.Value);
-                        foreach(var info in list)
+                        //同期処理でリスト化しているのでここでUIスレッドが固まらなくなる
+                        foreach (var file in files)
                         {
-                            LineInfoList.Add(info);
+                            SearchFilePath.Value = file;
+                            var list = await SearchFile(file, SearchText.Value, _CancellationTokenSource.Token);
+                            foreach (var info in list)
+                            {
+                                LineInfoList.Add(info);
+                            }
                         }
-                    }
-                });
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                finally
+                {
+                    SearchFilePath.Value = string.Empty;
+                    SearchEnable.Value = true;
 
-                SearchFilePath.Value = string.Empty;
-                SearchEnable.Value = true;
+                    _CancellationTokenSource = new CancellationTokenSource();
+                }
+            });
+
+            StopCommand.Subscribe(e =>
+            {
+                _CancellationTokenSource.Cancel();
             });
 
             DropCommand.Subscribe(e =>
@@ -119,7 +140,7 @@ namespace VisualGrep.ViewModels
             });
         }
 
-        private Task<List<LineInfo>> SearchFile(string fileName, string text)
+        private Task<List<LineInfo>> SearchFile(string fileName, string text, CancellationToken token)
         {
             Func<string, string, List<LineInfo>> action = (fileName, text) =>
             {
@@ -132,7 +153,7 @@ namespace VisualGrep.ViewModels
                     charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
                 }
 
-                if(charsetDetectedResult.Detected == null)
+                if (charsetDetectedResult.Detected == null)
                 {
                     return list;
                 }
@@ -143,6 +164,13 @@ namespace VisualGrep.ViewModels
                     int lineNo = 1;
                     while (0 <= sr.Peek())
                     {
+                        // キャンセルトークンの状態を監視する
+                        if (token.IsCancellationRequested)
+                        {
+                            // キャンセルされた場合は、OperationCanceledExceptionをスローする
+                            throw new OperationCanceledException(token);
+                        }
+
                         var line = sr.ReadLine();
 
                         if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
@@ -162,7 +190,8 @@ namespace VisualGrep.ViewModels
                 return list;
             };
 
-            return Task.Factory.StartNew(() => action(fileName, text));
+            // タスクを開始して、キャンセルトークンを渡す
+            return Task.Run(() => action(fileName, text), token);
         }
 
         private bool MatchText(string? line, string text, bool useRegex, bool ignoreCase)
