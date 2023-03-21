@@ -10,7 +10,8 @@
         xmlns:rp="clr-namespace:Reactive.Bindings.Interactivity;assembly=ReactiveProperty.WPF"
         mc:Ignorable="d"
         xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
-        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"                 
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:c="clr-namespace:VisualGrep.Controls"
         Title="VisualGrep"
         TitleCharacterCasing="Normal"
         Height="600"
@@ -24,6 +25,7 @@
     </mah:MetroWindow.DataContext>
     <mah:MetroWindow.Resources>
         <converter:PathConverter x:Key="PathConverter"/>
+        <converter:RichTextItemsToDocumentConverter x:Key="RichTextItemsToDocumentConverter"/>
     </mah:MetroWindow.Resources>
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="PreviewDragOver">
@@ -70,7 +72,8 @@
         </Grid>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="8*"/>
+                <RowDefinition Height="4*"/>
+                <RowDefinition Height="4*"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <DataGrid Grid.Row="0" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
@@ -84,9 +87,13 @@
                     <i:EventTrigger EventName="MouseDoubleClick">
                         <rp:EventToReactiveCommand Command="{Binding LineInfoMouseDoubleClickCommand}"/>
                     </i:EventTrigger>
+                    <i:EventTrigger EventName="SelectionChanged">
+                        <rp:EventToReactiveCommand Command="{Binding LineInfoSelectionChanged}"/>
+                    </i:EventTrigger>
                 </i:Interaction.Triggers>
             </DataGrid>
-            <TextBlock Grid.Row="1" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
+            <c:BindableRichTextBox Grid.Row="1" IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}" />
+            <TextBlock Grid.Row="2" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
         </Grid>
     </Grid>
 </mah:MetroWindow>

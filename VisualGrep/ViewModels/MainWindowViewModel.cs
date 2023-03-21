@@ -16,6 +16,8 @@ using VisualGrep.Models;
 using VisualGrep.Utls;
 using System.Reactive.Linq;
 using System.Threading;
+using System.Windows.Documents;
+using System.Windows.Media;
 
 namespace VisualGrep.ViewModels
 {
@@ -25,7 +27,7 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> SearchText { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<string> SearchFileName { get; } = new ReactiveProperty<string>(string.Empty);
         public ReadOnlyReactiveProperty<string?> SearchTextWatermark { get; }
-        public ReactiveProperty<bool> SearchEnable { get; } = new ReactiveProperty<bool>(true);
+        public ReactiveProperty<bool> SearchEnable { get; }
         public ReadOnlyReactiveProperty<bool> SearchStopEnable { get; }
         public ReactiveProperty<bool> IncludeSubfolders { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<bool> UseRegex { get; } = new ReactiveProperty<bool>(false);
@@ -36,15 +38,18 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand<DragEventArgs> PreviewDragOverCommand { get; } = new ReactiveCommand<DragEventArgs>();
         public ReactiveProperty<LineInfo> SelectedLineInfo { get; } = new ReactiveProperty<LineInfo>();
         public ReactiveCommand<MouseButtonEventArgs> LineInfoMouseDoubleClickCommand { get; } = new ReactiveCommand<MouseButtonEventArgs>();
+        public ReactiveCommand<SelectionChangedEventArgs> LineInfoSelectionChanged { get; } = new ReactiveCommand<SelectionChangedEventArgs>();
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
         public ReactiveProperty<string> SearchFilePath { get; } = new ReactiveProperty<string>(string.Empty);
-        
+        public ReactiveProperty<List<RichTextItem>> OutMessage { get; } = new ReactiveProperty<List<RichTextItem>>();
         private CancellationTokenSource _CancellationTokenSource = new CancellationTokenSource();
 
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            SearchEnable = FolderPath.Select(x => !string.IsNullOrEmpty(x)).ToReactiveProperty();
 
             SearchTextWatermark = UseRegex.Select(x => x ? "正規表現" : "検索文字列").ToReadOnlyReactiveProperty();
 
@@ -108,7 +113,8 @@ namespace VisualGrep.ViewModels
                 var files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if(files.Any())
                 {
-                    var dir = Path.GetDirectoryName(files.First());
+                    var path = files.First();
+                    var dir = Directory.Exists(path) ? path : Path.GetDirectoryName(path);
 
                     if(dir != null)
                     {
@@ -117,7 +123,7 @@ namespace VisualGrep.ViewModels
 
                     var extension = Path.GetExtension(files.First());
 
-                    if (extension != null)
+                    if (!string.IsNullOrEmpty(extension))
                     {
                         SearchFileName.Value = extension;
                     }
@@ -137,6 +143,22 @@ namespace VisualGrep.ViewModels
                 proc.StartInfo.FileName = SelectedLineInfo.Value.FullPath;
                 proc.StartInfo.UseShellExecute = true;
                 proc.Start();
+            });
+
+            LineInfoSelectionChanged.Subscribe(e =>
+            {
+                var list = new List<RichTextItem>();
+
+                ReadFile(SelectedLineInfo.Value.FullPath, (line) =>
+                {
+                    var text = new RichTextItem();
+                    text.Text = line ?? string.Empty;
+                    text.Foreground = Brushes.Black;
+
+                    list.Add(text);
+                });
+
+                OutMessage.Value = list;
             });
         }
 
@@ -192,6 +214,27 @@ namespace VisualGrep.ViewModels
 
             // タスクを開始して、キャンセルトークンを渡す
             return Task.Run(() => action(fileName, text), token);
+        }
+
+        private void ReadFile(string fileName, Action<string?> action)
+        {
+            DetectionResult charsetDetectedResult;
+
+            using (var stream = new FileStream(fileName, FileMode.Open))
+            {
+                charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
+            }
+
+            // ファイルをオープンする
+            using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
+            {
+                while (0 <= sr.Peek())
+                {
+                    var line = sr.ReadLine();
+
+                    action(line);
+                }
+            }
         }
 
         private bool MatchText(string? line, string text, bool useRegex, bool ignoreCase)
