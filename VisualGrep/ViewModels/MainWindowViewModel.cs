@@ -43,21 +43,24 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> SearchFilePath { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<List<RichTextItem>> OutMessage { get; } = new ReactiveProperty<List<RichTextItem>>();
         private CancellationTokenSource _CancellationTokenSource = new CancellationTokenSource();
+        public ReadOnlyReactiveProperty<bool> ControlEnable { get; }
+        public ReactiveProperty<bool> SearchingFlag { get; } = new ReactiveProperty<bool>(false);
 
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-            SearchEnable = FolderPath.Select(x => !string.IsNullOrEmpty(x)).ToReactiveProperty();
-
+            
+            SearchEnable = FolderPath.CombineLatest(SearchingFlag, (path, y) => !string.IsNullOrEmpty(path) && !y).ToReactiveProperty();
+            
             SearchTextWatermark = UseRegex.Select(x => x ? "正規表現" : "検索文字列").ToReadOnlyReactiveProperty();
 
-            SearchStopEnable = SearchEnable.Select(x => !x).ToReadOnlyReactiveProperty();
+            ControlEnable = SearchingFlag.Select(x => !x).ToReadOnlyReactiveProperty();
+
+            SearchStopEnable = SearchingFlag.Select(x => x).ToReadOnlyReactiveProperty();
 
             SearchCommand.Subscribe(async e =>
             {
-                SearchEnable.Value = false;
                 LineInfoList.Clear();
 
                 if (FolderPath.Value == string.Empty)
@@ -97,7 +100,6 @@ namespace VisualGrep.ViewModels
                 finally
                 {
                     SearchFilePath.Value = string.Empty;
-                    SearchEnable.Value = true;
 
                     _CancellationTokenSource = new CancellationTokenSource();
                 }

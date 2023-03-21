@@ -52,9 +52,9 @@
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
                 </Grid.RowDefinitions>
-                <TextBox Grid.Row="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEnabled="{Binding SearchEnable.Value}"/>
-                <TextBox Grid.Row="1" Controls:TextBoxHelper.Watermark="{Binding SearchTextWatermark.Value}" Text="{Binding SearchText.Value}" IsEnabled="{Binding SearchEnable.Value}"/>
-                <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEnabled="{Binding SearchEnable.Value}"/>
+                <TextBox Grid.Row="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEnabled="{Binding ControlEnable.Value}"/>
+                <TextBox Grid.Row="1" Controls:TextBoxHelper.Watermark="{Binding SearchTextWatermark.Value}" Text="{Binding SearchText.Value}" IsEnabled="{Binding ControlEnable.Value}"/>
+                <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEnabled="{Binding ControlEnable.Value}"/>
                 <StackPanel Grid.Row="3" Orientation="Horizontal">
                     <CheckBox Content="サブフォルダを含める" IsChecked="{Binding IncludeSubfolders.Value}" Margin="0,0,10,0"/>
                     <CheckBox Content="正規表現" IsChecked="{Binding UseRegex.Value}" Margin="0,0,10,0"/>
