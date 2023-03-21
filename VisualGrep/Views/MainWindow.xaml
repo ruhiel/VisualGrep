@@ -73,6 +73,7 @@
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="4*"/>
+                <RowDefinition Height="5"/>
                 <RowDefinition Height="4*"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
@@ -92,10 +93,11 @@
                     </i:EventTrigger>
                 </i:Interaction.Triggers>
             </DataGrid>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" CanContentScroll="True" >
+            <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" />
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" CanContentScroll="True" >
                 <c:BindableRichTextBox IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}"/>
             </ScrollViewer>
-            <TextBlock Grid.Row="2" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="3" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
         </Grid>
     </Grid>
 </mah:MetroWindow>

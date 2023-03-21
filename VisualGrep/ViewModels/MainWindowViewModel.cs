@@ -151,16 +151,22 @@ namespace VisualGrep.ViewModels
             {
                 var list = new List<RichTextItem>();
 
-                ReadFile(SelectedLineInfo.Value.FullPath, (line) =>
+                var grid = e.Source as DataGrid;
+                var info = grid?.SelectedItem as LineInfo;
+
+                if(info != null)
                 {
-                    var text = new RichTextItem();
-                    text.Text = line ?? string.Empty;
-                    text.Foreground = Brushes.Black;
+                    ReadFile(info.FullPath, (line) =>
+                    {
+                        var text = new RichTextItem();
+                        text.Text = line ?? string.Empty;
+                        text.Foreground = Brushes.Black;
 
-                    list.Add(text);
-                });
+                        list.Add(text);
+                    });
 
-                OutMessage.Value = list;
+                    OutMessage.Value = list;
+                }
             });
         }
 
