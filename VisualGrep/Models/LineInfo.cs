@@ -30,12 +30,19 @@ namespace VisualGrep.Models
             get { return _Line.ToString(); }
             set { SetProperty(ref _Line, uint.Parse(value)); }
         }
-
+        
         private string _Text = string.Empty;
         public string Text
         {
             get { return _Text; }
             set { SetProperty(ref _Text, value); }
+        }
+
+        private string _Sheet = string.Empty;
+        public string Sheet
+        {
+            get { return _Sheet; }
+            set { SetProperty(ref _Sheet, value); }
         }
 
         public string FullPath

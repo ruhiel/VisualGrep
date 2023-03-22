@@ -18,6 +18,8 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Windows.Documents;
 using System.Windows.Media;
+using ExcelDataReader;
+
 
 namespace VisualGrep.ViewModels
 {
@@ -154,6 +156,13 @@ namespace VisualGrep.ViewModels
                 var grid = e.Source as DataGrid;
                 var info = grid?.SelectedItem as LineInfo;
 
+                var ext = Path.GetExtension(info.FullPath);
+
+                if(ext != ".txt")
+                {
+                    return;
+                }
+
                 if(info != null)
                 {
                     ReadFile(info.FullPath, (line) =>
@@ -176,46 +185,102 @@ namespace VisualGrep.ViewModels
             {
                 var list = new List<LineInfo>();
 
-                DetectionResult charsetDetectedResult;
-
-                using (var stream = new FileStream(fileName, FileMode.Open))
-                {
-                    charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
-                }
-
-                if (charsetDetectedResult.Detected == null)
+                var fName = Path.GetFileName(fileName);
+                if(fName.Contains("~$") && (fileName.EndsWith(".xls") || fileName.EndsWith(".xlsx") || fileName.EndsWith(".xlsb")))
                 {
                     return list;
                 }
 
-                // ファイルをオープンする
-                using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
+                if (fileName.EndsWith(".xls") || fileName.EndsWith(".xlsx") || fileName.EndsWith(".xlsb"))
                 {
-                    int lineNo = 1;
-                    while (0 <= sr.Peek())
+                    using (FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
                     {
-                        // キャンセルトークンの状態を監視する
-                        if (token.IsCancellationRequested)
+                        using (var reader = ExcelReaderFactory.CreateReader(stream))
                         {
-                            // キャンセルされた場合は、OperationCanceledExceptionをスローする
-                            throw new OperationCanceledException(token);
+                            //全シート全セルを読み取り
+                            var dataset = reader.AsDataSet();
+                            for (var i = 0; i < dataset.Tables.Count; i++)
+                            {
+                                //シート名を指定
+                                var worksheet = dataset.Tables[i];
+
+                                if (worksheet is null)
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    //セルの入力文字を読み取り
+                                    for (var row = 0; row < worksheet.Rows.Count; row++)
+                                    {
+                                        for (var col = 0; col < worksheet.Columns.Count; col++)
+                                        {
+                                            var cell = worksheet.Rows[row][col];
+                                            var line = cell?.ToString() ?? "";
+                                            if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
+                                            {
+                                                var info = new LineInfo();
+                                                info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
+                                                info.FileName = Path.GetFileName(fileName);
+                                                info.Line = (row + 1).ToString();
+                                                info.Sheet = worksheet.TableName;
+                                                info.Text = line;
+                                                list.Add(info);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                         }
-
-                        var line = sr.ReadLine();
-
-                        if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
-                        {
-                            var info = new LineInfo();
-                            info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
-                            info.FileName = Path.GetFileName(fileName);
-                            info.Line = lineNo.ToString();
-                            info.Text = line;
-                            list.Add(info);
-                        }
-
-                        lineNo++;
                     }
                 }
+                else
+                {
+                    DetectionResult charsetDetectedResult;
+
+                    using (var stream = new FileStream(fileName, FileMode.Open))
+                    {
+                        charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
+                    }
+
+                    if (charsetDetectedResult.Detected == null)
+                    {
+                        return list;
+                    }
+
+                    // ファイルをオープンする
+                    using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
+                    {
+                        int lineNo = 1;
+                        while (0 <= sr.Peek())
+                        {
+                            // キャンセルトークンの状態を監視する
+                            if (token.IsCancellationRequested)
+                            {
+                                // キャンセルされた場合は、OperationCanceledExceptionをスローする
+                                throw new OperationCanceledException(token);
+                            }
+
+                            var line = sr.ReadLine();
+
+                            if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
+                            {
+                                var info = new LineInfo();
+                                info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
+                                info.FileName = Path.GetFileName(fileName);
+                                info.Line = lineNo.ToString();
+                                info.Sheet = string.Empty;
+                                info.Text = line;
+                                list.Add(info);
+                            }
+
+                            lineNo++;
+                        }
+                    }
+                }
+
+
 
                 return list;
             };
