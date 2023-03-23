@@ -95,23 +95,21 @@
                 </i:Interaction.Triggers>
             </DataGrid>
             <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" />
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" CanContentScroll="True" >
-                <StackPanel>
-                    <c:BindableRichTextBox Visibility="{Binding TextPanelVisibility.Value}" IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}" Height="300"/>
-                    <TabControl Visibility="{Binding ExcelPanelVisibility.Value}" Grid.Row="3" x:Name="tabControl" Margin="5" ItemsSource="{Binding TabPanels}">
-                        <TabControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Header.Value}" />
-                            </DataTemplate>
-                        </TabControl.ItemTemplate>
-                        <TabControl.ContentTemplate>
-                            <DataTemplate>
-                                <c:BindableRichTextBox IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}"/>
-                            </DataTemplate>
-                        </TabControl.ContentTemplate>
-                    </TabControl>
-                </StackPanel>
-            </ScrollViewer>
+            <StackPanel Grid.Row="2">
+                <c:BindableRichTextBox Height="200" Visibility="{Binding TextPanelVisibility.Value}" IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}" VerticalScrollBarVisibility="Visible"/>
+                <TabControl Height="200" Visibility="{Binding ExcelPanelVisibility.Value}" Grid.Row="3" x:Name="tabControl" Margin="5" ItemsSource="{Binding TabPanels}">
+                    <TabControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Header.Value}" />
+                        </DataTemplate>
+                    </TabControl.ItemTemplate>
+                    <TabControl.ContentTemplate>
+                        <DataTemplate>
+                            <c:BindableRichTextBox IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}"/>
+                        </DataTemplate>
+                    </TabControl.ContentTemplate>
+                </TabControl>
+            </StackPanel>
             <TextBlock Grid.Row="3" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
         </Grid>
     </Grid>
