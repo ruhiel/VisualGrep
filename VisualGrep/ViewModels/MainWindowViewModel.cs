@@ -19,7 +19,7 @@ using System.Threading;
 using System.Windows.Documents;
 using System.Windows.Media;
 using ExcelDataReader;
-
+using System.Data;
 
 namespace VisualGrep.ViewModels
 {
@@ -42,12 +42,14 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand<MouseButtonEventArgs> LineInfoMouseDoubleClickCommand { get; } = new ReactiveCommand<MouseButtonEventArgs>();
         public ReactiveCommand<SelectionChangedEventArgs> LineInfoSelectionChanged { get; } = new ReactiveCommand<SelectionChangedEventArgs>();
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
+        public ObservableCollection<TabPanelViewModel> TabPanels { get; } = new ObservableCollection<TabPanelViewModel>();
         public ReactiveProperty<string> SearchFilePath { get; } = new ReactiveProperty<string>(string.Empty);
         public ReactiveProperty<List<RichTextItem>> OutMessage { get; } = new ReactiveProperty<List<RichTextItem>>();
         private CancellationTokenSource _CancellationTokenSource = new CancellationTokenSource();
         public ReadOnlyReactiveProperty<bool> ControlEnable { get; }
         public ReactiveProperty<bool> SearchingFlag { get; } = new ReactiveProperty<bool>(false);
-
+        public ReactiveProperty<Visibility> TextPanelVisibility { get; } = new ReactiveProperty<Visibility>(Visibility.Visible);
+        public ReactiveProperty<Visibility> ExcelPanelVisibility { get; }
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
@@ -60,6 +62,8 @@ namespace VisualGrep.ViewModels
             ControlEnable = SearchingFlag.Select(x => !x).ToReadOnlyReactiveProperty();
 
             SearchStopEnable = SearchingFlag.Select(x => x).ToReadOnlyReactiveProperty();
+
+            ExcelPanelVisibility = TextPanelVisibility.Select(x => x == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible).ToReactiveProperty();
 
             SearchCommand.Subscribe(async e =>
             {
@@ -156,29 +160,91 @@ namespace VisualGrep.ViewModels
                 var grid = e.Source as DataGrid;
                 var info = grid?.SelectedItem as LineInfo;
 
-                var ext = Path.GetExtension(info.FullPath);
-
-                if(ext != ".txt")
+                if(info == null)
                 {
                     return;
                 }
+                
+                var ext = Path.GetExtension(info.FullPath);
 
-                if(info != null)
+                if (ext == ".txt")
                 {
-                    ReadFile(info.FullPath, (line) =>
+                    TextPanelVisibility.Value = Visibility.Visible;
+                    if (info != null)
                     {
-                        var text = new RichTextItem();
-                        text.Text = line ?? string.Empty;
-                        text.Foreground = Brushes.Black;
+                        ReadFile(info.FullPath, (line) =>
+                        {
+                            var text = new RichTextItem();
+                            text.Text = line ?? string.Empty;
+                            text.Foreground = Brushes.Black;
 
-                        list.Add(text);
-                    });
+                            list.Add(text);
+                        });
 
-                    OutMessage.Value = list;
+                        OutMessage.Value = list;
+                    }
                 }
+                else if(ext == ".xls" || ext == ".xlsx" || ext == ".xlsb")
+                {
+                    TextPanelVisibility.Value = Visibility.Collapsed;
+                    TabPanels.Clear();
+                    Action<DataTable> action = (worksheet) =>
+                    {
+                        var panel = new TabPanelViewModel();
+                        panel.Header.Value = worksheet.TableName;
+                        
+                        var list = new List<RichTextItem>();
+
+                        //セルの入力文字を読み取り
+                        for (var row = 0; row < worksheet.Rows.Count; row++)
+                        {
+                            var text = new RichTextItem();
+                            text.Foreground = Brushes.Black;
+                            var line = string.Empty;
+                            
+                            for (var col = 0; col < worksheet.Columns.Count; col++)
+                            {
+                                var cell = worksheet.Rows[row][col];
+                                line += cell?.ToString() ?? "";
+                            }
+
+                            text.Text = line;
+
+                            list.Add(text);
+                        }
+
+                        panel.OutMessage.Value = list;
+
+                        TabPanels.Add(panel);
+                    };
+
+                    ReadExcel(info.FullPath, action);
+                }
+
             });
         }
+        private void ReadExcel(string fileName, Action<DataTable> action)
+        {
+            using (FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
+            {
+                using (var reader = ExcelReaderFactory.CreateReader(stream))
+                {
+                    //全シート全セルを読み取り
+                    var dataset = reader.AsDataSet();
+                    for (var i = 0; i < dataset.Tables.Count; i++)
+                    {
+                        var worksheet = dataset.Tables[i];
 
+                        if (worksheet is null)
+                        {
+                            continue;
+                        }
+
+                        action.Invoke(worksheet);
+                    }
+                }
+            }
+        }
         private Task<List<LineInfo>> SearchFile(string fileName, string text, CancellationToken token)
         {
             Func<string, string, List<LineInfo>> action = (fileName, text) =>
@@ -193,47 +259,30 @@ namespace VisualGrep.ViewModels
 
                 if (fileName.EndsWith(".xls") || fileName.EndsWith(".xlsx") || fileName.EndsWith(".xlsb"))
                 {
-                    using (FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
+                    Action<DataTable> action = (worksheet) =>
                     {
-                        using (var reader = ExcelReaderFactory.CreateReader(stream))
+                        //セルの入力文字を読み取り
+                        for (var row = 0; row < worksheet.Rows.Count; row++)
                         {
-                            //全シート全セルを読み取り
-                            var dataset = reader.AsDataSet();
-                            for (var i = 0; i < dataset.Tables.Count; i++)
+                            for (var col = 0; col < worksheet.Columns.Count; col++)
                             {
-                                //シート名を指定
-                                var worksheet = dataset.Tables[i];
-
-                                if (worksheet is null)
+                                var cell = worksheet.Rows[row][col];
+                                var line = cell?.ToString() ?? "";
+                                if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
                                 {
-                                    continue;
-                                }
-                                else
-                                {
-                                    //セルの入力文字を読み取り
-                                    for (var row = 0; row < worksheet.Rows.Count; row++)
-                                    {
-                                        for (var col = 0; col < worksheet.Columns.Count; col++)
-                                        {
-                                            var cell = worksheet.Rows[row][col];
-                                            var line = cell?.ToString() ?? "";
-                                            if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
-                                            {
-                                                var info = new LineInfo();
-                                                info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
-                                                info.FileName = Path.GetFileName(fileName);
-                                                info.Line = (row + 1).ToString();
-                                                info.Sheet = worksheet.TableName;
-                                                info.Text = line;
-                                                list.Add(info);
-                                            }
-                                        }
-                                    }
+                                    var info = new LineInfo();
+                                    info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
+                                    info.FileName = Path.GetFileName(fileName);
+                                    info.Line = (row + 1).ToString();
+                                    info.Sheet = worksheet.TableName;
+                                    info.Text = line;
+                                    list.Add(info);
                                 }
                             }
-
                         }
-                    }
+                    };
+
+                    ReadExcel(fileName, action);
                 }
                 else
                 {

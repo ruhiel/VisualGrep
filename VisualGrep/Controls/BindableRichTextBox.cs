@@ -22,7 +22,7 @@ namespace VisualGrep.Controls
         private static void OnRichTextItemsChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
         {
             var control = sender as RichTextBox;
-            if (control != null)
+            if (control != null && e.NewValue != null)
             {
                 control.Document = e.NewValue as FlowDocument;
             }
