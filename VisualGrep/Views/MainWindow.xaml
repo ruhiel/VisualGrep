@@ -72,28 +72,37 @@
         </Grid>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="4*"/>
+                <RowDefinition Height="5*"/>
                 <RowDefinition Height="5"/>
-                <RowDefinition Height="4*"/>
+                <RowDefinition Height="3*"/>
                 <RowDefinition Height="30"/>
             </Grid.RowDefinitions>
-            <DataGrid Grid.Row="0" IsEnabled="{Binding ControlEnable.Value}" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="ファイル名" Width="150" Binding="{Binding FileName}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="場所" Width="150" Binding="{Binding FilePath}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="シート" Width="60" Binding="{Binding Sheet}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="行" Width="60" Binding="{Binding Line}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="文字列" Width="*" Binding="{Binding Text}" IsReadOnly="True"/>
-                </DataGrid.Columns>
-                <i:Interaction.Triggers>
-                    <i:EventTrigger EventName="MouseDoubleClick">
-                        <rp:EventToReactiveCommand Command="{Binding LineInfoMouseDoubleClickCommand}"/>
-                    </i:EventTrigger>
-                    <i:EventTrigger EventName="SelectionChanged">
-                        <rp:EventToReactiveCommand Command="{Binding LineInfoSelectionChanged}"/>
-                    </i:EventTrigger>
-                </i:Interaction.Triggers>
-            </DataGrid>
+            <Grid Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <DataGrid Grid.Row="0" IsEnabled="{Binding ControlEnable.Value}" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ファイル名" Width="150" Binding="{Binding FileName}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="場所" Width="150" Binding="{Binding FilePath}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="シート" Width="60" Binding="{Binding Sheet}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="行" Width="60" Binding="{Binding Line}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="文字列" Width="*" Binding="{Binding Text}" IsReadOnly="True"/>
+                    </DataGrid.Columns>
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="MouseDoubleClick">
+                            <rp:EventToReactiveCommand Command="{Binding LineInfoMouseDoubleClickCommand}"/>
+                        </i:EventTrigger>
+                        <i:EventTrigger EventName="SelectionChanged">
+                            <rp:EventToReactiveCommand Command="{Binding LineInfoSelectionChanged}"/>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </DataGrid>
+                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                    <Button Content="出力" IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Command="{Binding LineInfoListOutputCommand}"/>
+                </StackPanel>
+            </Grid>
             <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" />
             <c:BindableRichTextBox Grid.Row="2" Visibility="{Binding TextPanelVisibility.Value}" IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}" VerticalScrollBarVisibility="Visible"/>
             <TabControl Grid.Row="2" Visibility="{Binding ExcelPanelVisibility.Value}" x:Name="tabControl" Margin="5" ItemsSource="{Binding TabPanels}">

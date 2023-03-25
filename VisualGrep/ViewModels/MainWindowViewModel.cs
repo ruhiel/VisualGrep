@@ -50,6 +50,8 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<bool> SearchingFlag { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<Visibility> TextPanelVisibility { get; } = new ReactiveProperty<Visibility>(Visibility.Visible);
         public ReactiveProperty<Visibility> ExcelPanelVisibility { get; }
+        public ReactiveCommand LineInfoListOutputCommand { get; } = new ReactiveCommand();
+        public ReactiveProperty<bool> LineInfoListOutputEnabled { get; } = new ReactiveProperty<bool>(false);
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
@@ -109,6 +111,8 @@ namespace VisualGrep.ViewModels
 
                     _CancellationTokenSource = new CancellationTokenSource();
                 }
+
+                LineInfoListOutputEnabled.Value = LineInfoList.Any();
             });
 
             StopCommand.Subscribe(e =>
@@ -221,6 +225,24 @@ namespace VisualGrep.ViewModels
                     ReadExcel(info.FullPath, action);
                 }
 
+            });
+
+            LineInfoListOutputCommand.Subscribe(e =>
+            {
+                var name = Path.GetTempFileName();
+                using (StreamWriter sw = new StreamWriter(name, false, Encoding.UTF8))
+                {
+                    foreach(var line in LineInfoList)
+                    {
+                        sw.WriteLine(line.Text);
+                    }
+                }
+
+                var proc = new System.Diagnostics.Process();
+
+                proc.StartInfo.FileName = name;
+                proc.StartInfo.UseShellExecute = true;
+                proc.Start();
             });
         }
         private void ReadExcel(string fileName, Action<DataTable> action)
