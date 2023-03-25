@@ -11,6 +11,7 @@
     <PackageReference Include="ExcelDataReader" Version="3.6.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.6.0" />
     <PackageReference Include="MahApps.Metro" Version="2.4.9" />
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="4.11.0" />
     <PackageReference Include="Prism.Core" Version="8.1.97" />
     <PackageReference Include="ReactiveProperty" Version="9.1.2" />
     <PackageReference Include="ReactiveProperty.Core" Version="9.1.2" />

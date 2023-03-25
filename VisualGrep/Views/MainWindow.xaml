@@ -11,6 +11,7 @@
         mc:Ignorable="d"
         xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:c="clr-namespace:VisualGrep.Controls"
         Title="VisualGrep"
         TitleCharacterCasing="Normal"
@@ -52,7 +53,16 @@
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
                 </Grid.RowDefinitions>
-                <TextBox Grid.Row="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEnabled="{Binding ControlEnable.Value}"/>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="30"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEnabled="{Binding ControlEnable.Value}"/>
+                    <Button Grid.Column="1">
+                        <iconPacks:PackIconVaadinIcons Kind="FolderSearch" />
+                    </Button>
+                </Grid>
                 <TextBox Grid.Row="1" Controls:TextBoxHelper.Watermark="{Binding SearchTextWatermark.Value}" Text="{Binding SearchText.Value}" IsEnabled="{Binding ControlEnable.Value}"/>
                 <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEnabled="{Binding ControlEnable.Value}"/>
                 <StackPanel Grid.Row="3" Orientation="Horizontal">
@@ -100,7 +110,31 @@
                     </i:Interaction.Triggers>
                 </DataGrid>
                 <StackPanel Grid.Row="1" Orientation="Horizontal">
-                    <Button Content="出力" IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Command="{Binding LineInfoListOutputCommand}"/>
+                    <ComboBox Margin="0,0,5,0">
+                        <ComboBoxItem Content="文字列のみ" IsSelected="True"/>
+                        <ComboBoxItem Content="ファイル名のみ"/>
+                        <ComboBoxItem Content="検索条件＋ファイル名"/>
+                        <ComboBoxItem Content="明細データ"/>
+                        <ComboBoxItem Content="検索条件＋明細データ"/>
+                    </ComboBox>
+                    <Button IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Command="{Binding LineInfoListOutputCommand}" Margin="0,0,5,0">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconEvaIcons Kind="File" Margin="0,0,5,0"/>
+                            <TextBlock Text="出力"/>
+                        </StackPanel>
+                    </Button>
+                    <Button IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Margin="0,0,5,0">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconPicolIcons Kind="FloppyDisk" Margin="0,0,5,0"/>
+                            <TextBlock Text="CSV"/>
+                        </StackPanel>
+                    </Button>
+                    <Button IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Margin="0,0,5,0">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconPicolIcons Kind="FloppyDisk" Margin="0,0,5,0"/>
+                            <TextBlock Text="TSV"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
             <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" />
