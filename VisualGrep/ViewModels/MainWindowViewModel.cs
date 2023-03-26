@@ -61,12 +61,11 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand FolderOpenCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CsvOutputCommand { get; } = new ReactiveCommand();
         public ReactiveCommand TsvOutputCommand { get; } = new ReactiveCommand();
-        public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
+        public IDialogCoordinator? MahAppsDialogCoordinator { get; set; }
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            
+ 
             SearchEnable = FolderPath.CombineLatest(SearchingFlag, (path, y) => !string.IsNullOrEmpty(path) && !y).ToReactiveProperty();
             
             SearchTextWatermark = UseRegex.Select(x => x ? "正規表現" : "検索文字列").ToReadOnlyReactiveProperty();
@@ -77,19 +76,14 @@ namespace VisualGrep.ViewModels
 
             ExcelPanelVisibility = TextPanelVisibility.Select(x => x == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible).ToReactiveProperty();
 
-            OutputTypeViewModel? first = null;
+            var outputTypeViewModelList = Enum.GetValues(typeof(OutputType)).OfType<OutputType>().Select(x => new OutputTypeViewModel(x)).ToList();
 
-            foreach (var outputType in Enum.GetValues(typeof(OutputType)))
+            foreach (var vm in outputTypeViewModelList)
             {
-                var vm = new OutputTypeViewModel((OutputType)outputType);
-                if(first is null)
-                {
-                    first = vm;
-                }
                 OutputTypeList.Add(vm);
             }
 
-            SelectedOutputType.Value = first;
+            SelectedOutputType.Value = outputTypeViewModelList.First();
 
             SearchCommand.Subscribe(async e =>
             {
@@ -338,7 +332,10 @@ namespace VisualGrep.ViewModels
                         }
                     }
 
-                    await MahAppsDialogCoordinator.ShowMessageAsync(this, "CSV出力", $"{path}に出力しました。");
+                    if(MahAppsDialogCoordinator is not null)
+                    {
+                        await MahAppsDialogCoordinator.ShowMessageAsync(this, "CSV出力", $"{path}に出力しました。");
+                    }                   
                 }
             });
             TsvOutputCommand.Subscribe(async e =>
@@ -353,8 +350,10 @@ namespace VisualGrep.ViewModels
                             sw.WriteLine(line);
                         }
                     }
-
-                    await MahAppsDialogCoordinator.ShowMessageAsync(this, "TSV出力", $"{path}に出力しました。");
+                    if (MahAppsDialogCoordinator is not null)
+                    {
+                        await MahAppsDialogCoordinator.ShowMessageAsync(this, "TSV出力", $"{path}に出力しました。");
+                    }
                 }
             });
         }
