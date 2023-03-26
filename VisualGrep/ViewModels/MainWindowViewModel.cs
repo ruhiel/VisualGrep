@@ -20,6 +20,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using ExcelDataReader;
 using System.Data;
+using System.Diagnostics;
 
 namespace VisualGrep.ViewModels
 {
@@ -54,6 +55,7 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<bool> LineInfoListOutputEnabled { get; } = new ReactiveProperty<bool>(false);
         public ObservableCollection<OutputTypeViewModel> OutputTypeList { get; } = new ObservableCollection<OutputTypeViewModel>();
         public ReactiveProperty<OutputTypeViewModel> SelectedOutputType { get; } = new ReactiveProperty<OutputTypeViewModel>();
+        public ReactiveProperty<bool> CombineMatches { get; } = new ReactiveProperty<bool>(true);
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
@@ -70,6 +72,7 @@ namespace VisualGrep.ViewModels
             ExcelPanelVisibility = TextPanelVisibility.Select(x => x == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible).ToReactiveProperty();
 
             OutputTypeViewModel? first = null;
+
             foreach (var outputType in Enum.GetValues(typeof(OutputType)))
             {
                 var vm = new OutputTypeViewModel((OutputType)outputType);
@@ -84,6 +87,10 @@ namespace VisualGrep.ViewModels
 
             SearchCommand.Subscribe(async e =>
             {
+                // Stopwatchオブジェクトを作成
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 LineInfoList.Clear();
 
                 if (FolderPath.Value == string.Empty)
@@ -125,9 +132,20 @@ namespace VisualGrep.ViewModels
                     SearchFilePath.Value = string.Empty;
 
                     _CancellationTokenSource = new CancellationTokenSource();
-                }
 
-                LineInfoListOutputEnabled.Value = LineInfoList.Any();
+                    var tempList = LineInfoList.OrderBy(x => x.FileName).ThenBy(x => x.FilePath).ThenBy(x => long.Parse(x.Line)).ToList();
+                    LineInfoList.Clear();
+                    foreach(var info in tempList)
+                    {
+                        LineInfoList.Add(info);
+                    }
+
+                    LineInfoListOutputEnabled.Value = LineInfoList.Any();
+
+                    stopwatch.Stop();
+
+                    SearchFilePath.Value = $"終了しました。({stopwatch.Elapsed:mm\\:ss\\.fff})";
+                }
             });
 
             StopCommand.Subscribe(e =>
@@ -166,6 +184,8 @@ namespace VisualGrep.ViewModels
             LineInfoMouseDoubleClickCommand.Subscribe(e =>
             {
                 var proc = new System.Diagnostics.Process();
+
+                if(SelectedLineInfo.Value == null) return;
 
                 proc.StartInfo.FileName = SelectedLineInfo.Value.FullPath;
                 proc.StartInfo.UseShellExecute = true;
@@ -322,15 +342,19 @@ namespace VisualGrep.ViewModels
                             {
                                 var cell = worksheet.Rows[row][col];
                                 var line = cell?.ToString() ?? "";
-                                if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
+                                if (line != null)
                                 {
-                                    var info = new LineInfo();
-                                    info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
-                                    info.FileName = Path.GetFileName(fileName);
-                                    info.Line = (row + 1).ToString();
-                                    info.Sheet = worksheet.TableName;
-                                    info.Text = line;
-                                    list.Add(info);
+                                    var result = MatchText(line, text, UseRegex.Value, !CaseSensitive.Value);
+                                    foreach (var r in result)
+                                    {
+                                        var info = new LineInfo();
+                                        info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
+                                        info.FileName = Path.GetFileName(fileName);
+                                        info.Line = (row + 1).ToString();
+                                        info.Sheet = worksheet.TableName;
+                                        info.Text = r;
+                                        list.Add(info);
+                                    }
                                 }
                             }
                         }
@@ -367,15 +391,19 @@ namespace VisualGrep.ViewModels
 
                             var line = sr.ReadLine();
 
-                            if (line != null && MatchText(line, text, UseRegex.Value, !CaseSensitive.Value))
+                            if (line != null )
                             {
-                                var info = new LineInfo();
-                                info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
-                                info.FileName = Path.GetFileName(fileName);
-                                info.Line = lineNo.ToString();
-                                info.Sheet = string.Empty;
-                                info.Text = line;
-                                list.Add(info);
+                                var result = MatchText(line, text, UseRegex.Value, !CaseSensitive.Value);
+                                foreach(var r in result)
+                                {
+                                    var info = new LineInfo();
+                                    info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
+                                    info.FileName = Path.GetFileName(fileName);
+                                    info.Line = lineNo.ToString();
+                                    info.Sheet = string.Empty;
+                                    info.Text = r;
+                                    list.Add(info);
+                                }
                             }
 
                             lineNo++;
@@ -413,20 +441,46 @@ namespace VisualGrep.ViewModels
             }
         }
 
-        private bool MatchText(string? line, string text, bool useRegex, bool ignoreCase)
+        private List<string> MatchText(string line, string text, bool useRegex, bool ignoreCase)
         {
+            var result = new List<string>();
             if(useRegex)
             {
                 var regexOption = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+                // Regexオブジェクトを作成
+                var regex = new Regex(text, regexOption);
+                // 最初の一致する文字列を検索
+                var match = regex.Match(line);
 
-                return !string.IsNullOrEmpty(line) && Regex.IsMatch(line, text, regexOption);
+                // すべての一致する文字列を出力
+                while (match.Success)
+                {
+                    result.Add(line);
+                    if(CombineMatches.Value)
+                    {
+                        return result;
+                    }
+                    match = match.NextMatch();
+                }
             }
             else
             {
                 var stringComparison = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal;
+                
+                int index = line.IndexOf(text, stringComparison);
 
-                return !string.IsNullOrEmpty(line) && line.IndexOf(text, stringComparison) >= 0;
+                while (index != -1)
+                {
+                    result.Add(line);
+                    if (CombineMatches.Value)
+                    {
+                        return result;
+                    }
+                    index = line.IndexOf(text, index + 1, StringComparison.OrdinalIgnoreCase);
+                }
             }
+
+            return result;
         }
     }
 }

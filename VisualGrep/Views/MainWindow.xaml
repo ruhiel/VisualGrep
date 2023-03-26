@@ -38,7 +38,7 @@
     </i:Interaction.Triggers>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="120"/>
+            <RowDefinition Height="160"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
@@ -51,7 +51,7 @@
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
-                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="60"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
@@ -65,11 +65,15 @@
                 </Grid>
                 <TextBox Grid.Row="1" Controls:TextBoxHelper.Watermark="{Binding SearchTextWatermark.Value}" Text="{Binding SearchText.Value}" IsEnabled="{Binding ControlEnable.Value}"/>
                 <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEnabled="{Binding ControlEnable.Value}"/>
-                <StackPanel Grid.Row="3" Orientation="Horizontal">
-                    <CheckBox Content="サブフォルダを含める" IsChecked="{Binding IncludeSubfolders.Value}" Margin="0,0,10,0"/>
-                    <CheckBox Content="正規表現" IsChecked="{Binding UseRegex.Value}" Margin="0,0,10,0"/>
-                    <CheckBox Content="大文字小文字を区別する" IsChecked="{Binding CaseSensitive.Value}"/>
-                </StackPanel>
+                <GroupBox Grid.Row="3" Header="オプション">
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox Content="サブフォルダを含める" IsChecked="{Binding IncludeSubfolders.Value}" Margin="0,0,10,0"/>
+                        <CheckBox Content="正規表現" IsChecked="{Binding UseRegex.Value}" Margin="0,0,10,0"/>
+                        <CheckBox Content="大文字小文字を区別する" IsChecked="{Binding CaseSensitive.Value}" Margin="0,0,10,0"/>
+                        <CheckBox Content="行内のマッチを1回にまとめる" IsChecked="{Binding CombineMatches.Value}"/>
+                    </StackPanel>
+
+                </GroupBox>
             </Grid>
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
