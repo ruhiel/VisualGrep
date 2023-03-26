@@ -52,6 +52,8 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<Visibility> ExcelPanelVisibility { get; }
         public ReactiveCommand LineInfoListOutputCommand { get; } = new ReactiveCommand();
         public ReactiveProperty<bool> LineInfoListOutputEnabled { get; } = new ReactiveProperty<bool>(false);
+        public ObservableCollection<OutputTypeViewModel> OutputTypeList { get; } = new ObservableCollection<OutputTypeViewModel>();
+        public ReactiveProperty<OutputTypeViewModel> SelectedOutputType { get; } = new ReactiveProperty<OutputTypeViewModel>();
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
@@ -66,6 +68,19 @@ namespace VisualGrep.ViewModels
             SearchStopEnable = SearchingFlag.Select(x => x).ToReadOnlyReactiveProperty();
 
             ExcelPanelVisibility = TextPanelVisibility.Select(x => x == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible).ToReactiveProperty();
+
+            OutputTypeViewModel? first = null;
+            foreach (var outputType in Enum.GetValues(typeof(OutputType)))
+            {
+                var vm = new OutputTypeViewModel((OutputType)outputType);
+                if(first is null)
+                {
+                    first = vm;
+                }
+                OutputTypeList.Add(vm);
+            }
+
+            SelectedOutputType.Value = first;
 
             SearchCommand.Subscribe(async e =>
             {
@@ -232,9 +247,9 @@ namespace VisualGrep.ViewModels
                 var name = Path.GetTempFileName();
                 using (StreamWriter sw = new StreamWriter(name, false, Encoding.UTF8))
                 {
-                    foreach(var line in LineInfoList)
+                    foreach(var line in GetContentLines())
                     {
-                        sw.WriteLine(line.Text);
+                        sw.WriteLine(line);
                     }
                 }
 
@@ -245,6 +260,23 @@ namespace VisualGrep.ViewModels
                 proc.Start();
             });
         }
+        private IEnumerable<string> GetContentLines()
+        {
+            if(SelectedOutputType.Value.OutputType == OutputType.StringOnly)
+            {
+                return LineInfoList.Select(x => x.Text);
+            }
+            else if (SelectedOutputType.Value.OutputType == OutputType.FileNameOnly)
+            {
+                return LineInfoList.Select(x => x.FullPath).Distinct();
+            }
+            else if (SelectedOutputType.Value.OutputType == OutputType.DetailData)
+            {
+                return LineInfoList.Select(x => FileUtils.TsvLineCreate(x.FullPath, x.Line.ToString(), x.Text));
+            }
+            throw new ArgumentException();
+        }
+
         private void ReadExcel(string fileName, Action<DataTable> action)
         {
             using (FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read))

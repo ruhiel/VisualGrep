@@ -76,8 +76,18 @@
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
                 </Grid.RowDefinitions>
-                <Button Grid.Row="0" Content="検索" Command="{Binding SearchCommand}" IsEnabled="{Binding SearchEnable.Value}"/>
-                <Button Grid.Row="1" Content="停止" Command="{Binding StopCommand}" IsEnabled="{Binding SearchStopEnable.Value}"/>
+                <Button Grid.Row="0" Command="{Binding SearchCommand}" IsEnabled="{Binding SearchEnable.Value}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="FileSearch" />
+                        <TextBlock Text="検索"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Row="1" Command="{Binding StopCommand}" IsEnabled="{Binding SearchStopEnable.Value}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconRemixIcon Kind="StopCircleLine" />
+                        <TextBlock Text="停止"/>
+                    </StackPanel>
+                </Button>
             </Grid>
         </Grid>
         <Grid Grid.Row="1">
@@ -110,13 +120,7 @@
                     </i:Interaction.Triggers>
                 </DataGrid>
                 <StackPanel Grid.Row="1" Orientation="Horizontal">
-                    <ComboBox Margin="0,0,5,0">
-                        <ComboBoxItem Content="文字列のみ" IsSelected="True"/>
-                        <ComboBoxItem Content="ファイル名のみ"/>
-                        <ComboBoxItem Content="検索条件＋ファイル名"/>
-                        <ComboBoxItem Content="明細データ"/>
-                        <ComboBoxItem Content="検索条件＋明細データ"/>
-                    </ComboBox>
+                    <ComboBox Margin="0,0,5,0" ItemsSource="{Binding OutputTypeList}" SelectedItem="{Binding SelectedOutputType.Value}" DisplayMemberPath="DisplayName"/>
                     <Button IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Command="{Binding LineInfoListOutputCommand}" Margin="0,0,5,0">
                         <StackPanel Orientation="Horizontal">
                             <iconPacks:PackIconEvaIcons Kind="File" Margin="0,0,5,0"/>

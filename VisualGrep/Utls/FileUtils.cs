@@ -10,6 +10,11 @@ namespace VisualGrep.Utls
 {
     public static class FileUtils
     {
+        public static string TsvLineCreate(params object[] args)
+        {
+            return string.Join("\t", args);
+        }
+
         private static readonly HashSet<string> _exceptFolder = new HashSet<string>
         {
             @"C:\Windows", //システムファイルが多すぎる
