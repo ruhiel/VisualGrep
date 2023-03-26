@@ -17,6 +17,7 @@
     <PackageReference Include="ReactiveProperty.Core" Version="9.1.2" />
     <PackageReference Include="ReactiveProperty.WPF" Version="9.1.2" />
     <PackageReference Include="UTF.Unknown" Version="2.5.1" />
+    <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
   </ItemGroup>
 
 </Project>

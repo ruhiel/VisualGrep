@@ -21,6 +21,8 @@ using System.Windows.Media;
 using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using MahApps.Metro.Controls.Dialogs;
 
 namespace VisualGrep.ViewModels
 {
@@ -56,6 +58,10 @@ namespace VisualGrep.ViewModels
         public ObservableCollection<OutputTypeViewModel> OutputTypeList { get; } = new ObservableCollection<OutputTypeViewModel>();
         public ReactiveProperty<OutputTypeViewModel> SelectedOutputType { get; } = new ReactiveProperty<OutputTypeViewModel>();
         public ReactiveProperty<bool> CombineMatches { get; } = new ReactiveProperty<bool>(true);
+        public ReactiveCommand FolderOpenCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand CsvOutputCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand TsvOutputCommand { get; } = new ReactiveCommand();
+        public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
         public MainWindowViewModel()
         {
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
@@ -87,12 +93,6 @@ namespace VisualGrep.ViewModels
 
             SearchCommand.Subscribe(async e =>
             {
-                // Stopwatchオブジェクトを作成
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-
-                LineInfoList.Clear();
-
                 if (FolderPath.Value == string.Empty)
                 {
                     return;
@@ -102,6 +102,14 @@ namespace VisualGrep.ViewModels
                 {
                     return;
                 }
+                
+                // Stopwatchオブジェクトを作成
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                LineInfoList.Clear();
+
+                SearchingFlag.Value = true;
 
                 var files = FileUtils.GetAllFiles(FolderPath.Value, IncludeSubfolders.Value)
                     .Select((value, index) => value)
@@ -145,6 +153,8 @@ namespace VisualGrep.ViewModels
                     stopwatch.Stop();
 
                     SearchFilePath.Value = $"終了しました。({stopwatch.Elapsed:mm\\:ss\\.fff})";
+
+                    SearchingFlag.Value = false;
                 }
             });
 
@@ -155,7 +165,7 @@ namespace VisualGrep.ViewModels
 
             DropCommand.Subscribe(e =>
             {
-                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                var files = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
                 if(files.Any())
                 {
                     var path = files.First();
@@ -192,7 +202,7 @@ namespace VisualGrep.ViewModels
                 proc.Start();
             });
 
-            LineInfoSelectionChanged.Subscribe(e =>
+            LineInfoSelectionChanged.Subscribe(async e =>
             {
                 var list = new List<RichTextItem>();
 
@@ -203,15 +213,15 @@ namespace VisualGrep.ViewModels
                 {
                     return;
                 }
-                
+
                 var ext = Path.GetExtension(info.FullPath);
 
-                if (ext == ".txt")
+                if (ext == ".txt" || ext == ".csv" || ext == ".tsv" || ext == ".log" || ext == ".xml" || ext == ".json" || ext == ".html" || ext == ".md")
                 {
                     TextPanelVisibility.Value = Visibility.Visible;
                     if (info != null)
                     {
-                        ReadFile(info.FullPath, (line) =>
+                        await ReadFile(info.FullPath, (line) =>
                         {
                             var text = new RichTextItem();
                             text.Text = line ?? string.Empty;
@@ -223,7 +233,7 @@ namespace VisualGrep.ViewModels
                         OutMessage.Value = list;
                     }
                 }
-                else if(ext == ".xls" || ext == ".xlsx" || ext == ".xlsb")
+                else if (ext == ".xls" || ext == ".xlsx" || ext == ".xlsb")
                 {
                     TextPanelVisibility.Value = Visibility.Collapsed;
                     TabPanels.Clear();
@@ -231,7 +241,7 @@ namespace VisualGrep.ViewModels
                     {
                         var panel = new TabPanelViewModel();
                         panel.Header.Value = worksheet.TableName;
-                        
+
                         var list = new List<RichTextItem>();
 
                         //セルの入力文字を読み取り
@@ -240,7 +250,7 @@ namespace VisualGrep.ViewModels
                             var text = new RichTextItem();
                             text.Foreground = Brushes.Black;
                             var line = string.Empty;
-                            
+
                             for (var col = 0; col < worksheet.Columns.Count; col++)
                             {
                                 var cell = worksheet.Rows[row][col];
@@ -259,7 +269,32 @@ namespace VisualGrep.ViewModels
 
                     ReadExcel(info.FullPath, action);
                 }
+                else
+                {
+                    DetectionResult? charsetDetectedResult = null;
+                    using (var stream = new FileStream(info.FullPath, FileMode.Open))
+                    {
+                        charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
+                    }
 
+                    if(charsetDetectedResult.Detected is not null)
+                    {
+                        TextPanelVisibility.Value = Visibility.Visible;
+                        if (info != null)
+                        {
+                            await ReadFile(info.FullPath, (line) =>
+                            {
+                                var text = new RichTextItem();
+                                text.Text = line ?? string.Empty;
+                                text.Foreground = Brushes.Black;
+
+                                list.Add(text);
+                            });
+
+                            OutMessage.Value = list;
+                        }
+                    }
+                }
             });
 
             LineInfoListOutputCommand.Subscribe(e =>
@@ -279,8 +314,76 @@ namespace VisualGrep.ViewModels
                 proc.StartInfo.UseShellExecute = true;
                 proc.Start();
             });
+
+            FolderOpenCommand.Subscribe(e =>
+            {
+                var path = SelectPath(true);
+
+                if(path is not null)
+                {
+                    FolderPath.Value = path;
+                }
+            });
+
+            CsvOutputCommand.Subscribe(async e =>
+            {
+                var path = SelectPath(extenstion: ".csv");
+                if(path != null)
+                {
+                    using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
+                    {
+                        foreach (var line in GetContentLines(Format.Csv))
+                        {
+                            sw.WriteLine(line);
+                        }
+                    }
+
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, "CSV出力", $"{path}に出力しました。");
+                }
+            });
+            TsvOutputCommand.Subscribe(async e =>
+            {
+                var path = SelectPath(extenstion: ".tsv");
+                if (path != null)
+                {
+                    using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
+                    {
+                        foreach (var line in GetContentLines(Format.Tsv))
+                        {
+                            sw.WriteLine(line);
+                        }
+                    }
+
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, "TSV出力", $"{path}に出力しました。");
+                }
+            });
         }
-        private IEnumerable<string> GetContentLines()
+
+        private string? SelectPath(bool isFolderPicker = false, string? extenstion = null)
+        {
+            using (var cofd = new CommonOpenFileDialog()
+            {
+                Title = "フォルダを選択してください",
+                InitialDirectory = @"C:\Users\Public",
+                // フォルダ選択モードにする
+                IsFolderPicker = isFolderPicker,
+            })
+            {
+                if (extenstion != null)
+                {
+                    cofd.DefaultExtension = extenstion;
+                    cofd.DefaultFileName = extenstion;
+                }
+                if (cofd.ShowDialog() != CommonFileDialogResult.Ok)
+                {
+                    return null;
+                }
+
+                return cofd.FileName;
+            }
+        }
+
+        private IEnumerable<string> GetContentLines(Format format = Format.Tsv)
         {
             if(SelectedOutputType.Value.OutputType == OutputType.StringOnly)
             {
@@ -292,7 +395,7 @@ namespace VisualGrep.ViewModels
             }
             else if (SelectedOutputType.Value.OutputType == OutputType.DetailData)
             {
-                return LineInfoList.Select(x => FileUtils.TsvLineCreate(x.FullPath, x.Line.ToString(), x.Text));
+                return LineInfoList.Select(x => format.LineCreate(x));
             }
             throw new ArgumentException();
         }
@@ -420,25 +523,28 @@ namespace VisualGrep.ViewModels
             return Task.Run(() => action(fileName, text), token);
         }
 
-        private void ReadFile(string fileName, Action<string?> action)
+        private Task ReadFile(string fileName, Action<string?> action)
         {
-            DetectionResult charsetDetectedResult;
-
-            using (var stream = new FileStream(fileName, FileMode.Open))
+            return Task.Run(() =>
             {
-                charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
-            }
+                DetectionResult charsetDetectedResult;
 
-            // ファイルをオープンする
-            using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
-            {
-                while (0 <= sr.Peek())
+                using (var stream = new FileStream(fileName, FileMode.Open))
                 {
-                    var line = sr.ReadLine();
-
-                    action(line);
+                    charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
                 }
-            }
+
+                // ファイルをオープンする
+                using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
+                {
+                    while (0 <= sr.Peek())
+                    {
+                        var line = sr.ReadLine();
+
+                        action(line);
+                    }
+                }
+            });
         }
 
         private List<string> MatchText(string line, string text, bool useRegex, bool ignoreCase)

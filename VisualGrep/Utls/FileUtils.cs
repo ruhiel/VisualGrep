@@ -14,6 +14,10 @@ namespace VisualGrep.Utls
         {
             return string.Join("\t", args);
         }
+        public static string CsvLineCreate(params object[] args)
+        {
+            return string.Join(",", args);
+        }
 
         private static readonly HashSet<string> _exceptFolder = new HashSet<string>
         {

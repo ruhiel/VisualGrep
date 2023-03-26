@@ -20,9 +20,15 @@
         SaveWindowPosition="True"
         BorderThickness="1"
         WindowStartupLocation="CenterScreen"
-        AllowDrop="True">
+        AllowDrop="True"
+        xmlns:Dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+        Dialog:DialogParticipation.Register="{Binding}">
     <mah:MetroWindow.DataContext>
-        <vm:MainWindowViewModel/>
+        <vm:MainWindowViewModel>
+            <vm:MainWindowViewModel.MahAppsDialogCoordinator>
+                <Dialog:DialogCoordinator/>
+            </vm:MainWindowViewModel.MahAppsDialogCoordinator>
+        </vm:MainWindowViewModel>
     </mah:MetroWindow.DataContext>
     <mah:MetroWindow.Resources>
         <converter:PathConverter x:Key="PathConverter"/>
@@ -59,7 +65,7 @@
                         <ColumnDefinition Width="30"/>
                     </Grid.ColumnDefinitions>
                     <TextBox Grid.Column="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEnabled="{Binding ControlEnable.Value}"/>
-                    <Button Grid.Column="1">
+                    <Button Grid.Column="1" Command="{Binding FolderOpenCommand}">
                         <iconPacks:PackIconVaadinIcons Kind="FolderSearch" />
                     </Button>
                 </Grid>
@@ -131,13 +137,13 @@
                             <TextBlock Text="出力"/>
                         </StackPanel>
                     </Button>
-                    <Button IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Margin="0,0,5,0">
+                    <Button IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Command="{Binding CsvOutputCommand}" Margin="0,0,5,0">
                         <StackPanel Orientation="Horizontal">
                             <iconPacks:PackIconPicolIcons Kind="FloppyDisk" Margin="0,0,5,0"/>
                             <TextBlock Text="CSV"/>
                         </StackPanel>
                     </Button>
-                    <Button IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Margin="0,0,5,0">
+                    <Button IsEnabled="{Binding LineInfoListOutputEnabled.Value}" Command="{Binding TsvOutputCommand}" Margin="0,0,5,0">
                         <StackPanel Orientation="Horizontal">
                             <iconPacks:PackIconPicolIcons Kind="FloppyDisk" Margin="0,0,5,0"/>
                             <TextBlock Text="TSV"/>
