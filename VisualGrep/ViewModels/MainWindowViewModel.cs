@@ -23,6 +23,9 @@ using System.Data;
 using System.Diagnostics;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using MahApps.Metro.Controls.Dialogs;
+using NLog;
+using NLog.Config;
+using NLog.Targets;
 
 namespace VisualGrep.ViewModels
 {
@@ -62,8 +65,17 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand CsvOutputCommand { get; } = new ReactiveCommand();
         public ReactiveCommand TsvOutputCommand { get; } = new ReactiveCommand();
         public IDialogCoordinator? MahAppsDialogCoordinator { get; set; }
+
+        // ログを出力する変数定義
+        static private Logger logger = LogManager.GetCurrentClassLogger();
         public MainWindowViewModel()
         {
+            LogManager.Setup().LoadConfiguration(builder => {
+                builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToConsole();
+                builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToFile(fileName: "./logs/${processname}.log");
+                builder.ForLogger().FilterMinLevel(LogLevel.Error).WriteToFile(fileName: "./logs/${processname}.log");
+            });
+
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
  
             SearchEnable = FolderPath.CombineLatest(SearchingFlag, (path, y) => !string.IsNullOrEmpty(path) && !y).ToReactiveProperty();
@@ -87,68 +99,76 @@ namespace VisualGrep.ViewModels
 
             SearchCommand.Subscribe(async e =>
             {
-                if (FolderPath.Value == string.Empty)
-                {
-                    return;
-                }
-
-                if (!Directory.Exists(FolderPath.Value))
-                {
-                    return;
-                }
-                
-                // Stopwatchオブジェクトを作成
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-
-                LineInfoList.Clear();
-
-                SearchingFlag.Value = true;
-
-                var files = FileUtils.GetAllFiles(FolderPath.Value, IncludeSubfolders.Value)
-                    .Select((value, index) => value)
-                    .Where(x => SearchFileName.Value == string.Empty ? true : x.Contains(SearchFileName.Value))
-                    .ToList();
-
                 try
                 {
-                    await Task.Run(async () =>
+                    if (FolderPath.Value == string.Empty)
                     {
-                        //同期処理でリスト化しているのでここでUIスレッドが固まらなくなる
-                        foreach (var file in files)
-                        {
-                            SearchFilePath.Value = file;
-                            var list = await SearchFile(file, SearchText.Value, _CancellationTokenSource.Token);
-                            foreach (var info in list)
-                            {
-                                LineInfoList.Add(info);
-                            }
-                        }
-                    });
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                finally
-                {
-                    SearchFilePath.Value = string.Empty;
-
-                    _CancellationTokenSource = new CancellationTokenSource();
-
-                    var tempList = LineInfoList.OrderBy(x => x.FileName).ThenBy(x => x.FilePath).ThenBy(x => long.Parse(x.Line)).ToList();
-                    LineInfoList.Clear();
-                    foreach(var info in tempList)
-                    {
-                        LineInfoList.Add(info);
+                        return;
                     }
 
-                    LineInfoListOutputEnabled.Value = LineInfoList.Any();
+                    if (!Directory.Exists(FolderPath.Value))
+                    {
+                        return;
+                    }
 
-                    stopwatch.Stop();
+                    // Stopwatchオブジェクトを作成
+                    var stopwatch = new Stopwatch();
+                    stopwatch.Start();
 
-                    SearchFilePath.Value = $"終了しました。({stopwatch.Elapsed:mm\\:ss\\.fff})";
+                    LineInfoList.Clear();
 
-                    SearchingFlag.Value = false;
+                    SearchingFlag.Value = true;
+
+                    var files = FileUtils.GetAllFiles(FolderPath.Value, IncludeSubfolders.Value)
+                        .Select((value, index) => value)
+                        .Where(x => SearchFileName.Value == string.Empty ? true : x.Contains(SearchFileName.Value))
+                        .ToList();
+
+                    try
+                    {
+                        await Task.Run(async () =>
+                        {
+                        //同期処理でリスト化しているのでここでUIスレッドが固まらなくなる
+                        foreach (var file in files)
+                            {
+                                SearchFilePath.Value = file;
+                                var list = await SearchFile(file, SearchText.Value, _CancellationTokenSource.Token);
+                                foreach (var info in list)
+                                {
+                                    LineInfoList.Add(info);
+                                }
+                            }
+                        });
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    finally
+                    {
+                        SearchFilePath.Value = string.Empty;
+
+                        _CancellationTokenSource = new CancellationTokenSource();
+
+                        var tempList = LineInfoList.OrderBy(x => x.FileName).ThenBy(x => x.FilePath).ThenBy(x => long.Parse(x.Line)).ToList();
+                        LineInfoList.Clear();
+                        foreach (var info in tempList)
+                        {
+                            LineInfoList.Add(info);
+                        }
+
+                        LineInfoListOutputEnabled.Value = LineInfoList.Any();
+
+                        stopwatch.Stop();
+
+                        SearchFilePath.Value = $"終了しました。({stopwatch.Elapsed:mm\\:ss\\.fff})";
+
+                        SearchingFlag.Value = false;
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    logger.Error("SearchCommand Error " + ex.Message);
                 }
             });
 
@@ -293,71 +313,98 @@ namespace VisualGrep.ViewModels
 
             LineInfoListOutputCommand.Subscribe(e =>
             {
-                var name = Path.GetTempFileName();
-                using (StreamWriter sw = new StreamWriter(name, false, Encoding.UTF8))
+                try
                 {
-                    foreach(var line in GetContentLines())
+                    var name = Path.GetTempFileName();
+                    using (StreamWriter sw = new StreamWriter(name, false, Encoding.UTF8))
                     {
-                        sw.WriteLine(line);
+                        foreach (var line in GetContentLines())
+                        {
+                            sw.WriteLine(line);
+                        }
                     }
+
+                    var proc = new System.Diagnostics.Process();
+
+                    proc.StartInfo.FileName = name;
+                    proc.StartInfo.UseShellExecute = true;
+                    proc.Start();
                 }
-
-                var proc = new System.Diagnostics.Process();
-
-                proc.StartInfo.FileName = name;
-                proc.StartInfo.UseShellExecute = true;
-                proc.Start();
+                catch (Exception ex)
+                {
+                    logger.Error("LineInfoListOutputCommand Error " + ex.Message);
+                }
             });
 
             FolderOpenCommand.Subscribe(e =>
             {
-                var path = SelectPath(true);
-
-                if(path is not null)
+                try
                 {
-                    FolderPath.Value = path;
+                    var path = SelectPath(true);
+
+                    if (path is not null)
+                    {
+                        FolderPath.Value = path;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error("FolderOpenCommand Error " + ex.Message);
                 }
             });
 
             CsvOutputCommand.Subscribe(async e =>
             {
-                var path = SelectPath(extenstion: ".csv");
-                if(path != null)
+                try
                 {
-                    using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
+                    var path = SelectPath(extenstion: ".csv");
+                    if (path != null)
                     {
-                        foreach (var line in GetContentLines(Format.Csv))
+                        using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
                         {
-                            sw.WriteLine(line);
+                            foreach (var line in GetContentLines(Format.Csv))
+                            {
+                                sw.WriteLine(line);
+                            }
+                        }
+
+                        if (MahAppsDialogCoordinator is not null)
+                        {
+                            await MahAppsDialogCoordinator.ShowMessageAsync(this, "CSV出力", $"{path}に出力しました。");
                         }
                     }
-
-                    if(MahAppsDialogCoordinator is not null)
-                    {
-                        await MahAppsDialogCoordinator.ShowMessageAsync(this, "CSV出力", $"{path}に出力しました。");
-                    }                   
+                }
+                catch (Exception ex)
+                {
+                    logger.Error("CsvOutputCommand Error " + ex.Message);
                 }
             });
             TsvOutputCommand.Subscribe(async e =>
             {
-                var path = SelectPath(extenstion: ".tsv");
-                if (path != null)
+                try
                 {
-                    using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
+                    var path = SelectPath(extenstion: ".tsv");
+                    if (path != null)
                     {
-                        foreach (var line in GetContentLines(Format.Tsv))
+                        using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
                         {
-                            sw.WriteLine(line);
+                            foreach (var line in GetContentLines(Format.Tsv))
+                            {
+                                sw.WriteLine(line);
+                            }
+                        }
+                        if (MahAppsDialogCoordinator is not null)
+                        {
+                            await MahAppsDialogCoordinator.ShowMessageAsync(this, "TSV出力", $"{path}に出力しました。");
                         }
                     }
-                    if (MahAppsDialogCoordinator is not null)
-                    {
-                        await MahAppsDialogCoordinator.ShowMessageAsync(this, "TSV出力", $"{path}に出力しました。");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error("TsvOutputCommand Error " + ex.Message);
                 }
             });
         }
-
         private string? SelectPath(bool isFolderPicker = false, string? extenstion = null)
         {
             using (var cofd = new CommonOpenFileDialog()
