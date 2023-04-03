@@ -526,52 +526,65 @@ namespace VisualGrep.ViewModels
                 {
                     DetectionResult charsetDetectedResult;
 
-                    using (var stream = new FileStream(fileName, FileMode.Open))
+                    try
                     {
-                        charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
-                    }
-
-                    if (charsetDetectedResult.Detected == null)
-                    {
-                        return list;
-                    }
-
-                    // ファイルをオープンする
-                    using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
-                    {
-                        int lineNo = 1;
-                        while (0 <= sr.Peek())
+                        using (var stream = new FileStream(fileName, FileMode.Open))
                         {
-                            // キャンセルトークンの状態を監視する
-                            if (token.IsCancellationRequested)
-                            {
-                                // キャンセルされた場合は、OperationCanceledExceptionをスローする
-                                throw new OperationCanceledException(token);
-                            }
+                            charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
+                        }
 
-                            var line = sr.ReadLine();
+                        if (charsetDetectedResult.Detected == null)
+                        {
+                            return list;
+                        }
 
-                            if (line != null )
+                        // ファイルをオープンする
+                        using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
+                        {
+                            int lineNo = 1;
+                            while (0 <= sr.Peek())
                             {
-                                var result = MatchText(line, text, UseRegex.Value, !CaseSensitive.Value);
-                                foreach(var r in result)
+                                // キャンセルトークンの状態を監視する
+                                if (token.IsCancellationRequested)
                                 {
-                                    var info = new LineInfo();
-                                    info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
-                                    info.FileName = Path.GetFileName(fileName);
-                                    info.Line = lineNo.ToString();
-                                    info.Sheet = string.Empty;
-                                    info.Text = r;
-                                    list.Add(info);
+                                    // キャンセルされた場合は、OperationCanceledExceptionをスローする
+                                    throw new OperationCanceledException(token);
                                 }
-                            }
 
-                            lineNo++;
+                                var line = sr.ReadLine();
+
+                                if (line != null)
+                                {
+                                    var result = MatchText(line, text, UseRegex.Value, !CaseSensitive.Value);
+                                    foreach (var r in result)
+                                    {
+                                        var info = new LineInfo();
+                                        info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
+                                        info.FileName = Path.GetFileName(fileName);
+                                        info.Line = lineNo.ToString();
+                                        info.Sheet = string.Empty;
+                                        info.Text = r;
+                                        list.Add(info);
+                                    }
+                                }
+
+                                lineNo++;
+                            }
                         }
                     }
+                    catch (OperationCanceledException ex)
+                    {
+                        throw ex;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex);
+                    }
+                    finally
+                    {
+
+                    }
                 }
-
-
 
                 return list;
             };
