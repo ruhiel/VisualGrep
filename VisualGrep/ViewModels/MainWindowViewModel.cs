@@ -72,16 +72,17 @@ namespace VisualGrep.ViewModels
         static private Logger logger = LogManager.GetCurrentClassLogger();
         public MainWindowViewModel()
         {
-            LogManager.Setup().LoadConfiguration(builder => {
+            LogManager.Setup().LoadConfiguration(builder =>
+            {
                 builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToConsole();
                 builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToFile(fileName: "./logs/${processname}.log");
                 builder.ForLogger().FilterMinLevel(LogLevel.Error).WriteToFile(fileName: "./logs/${processname}.log");
             });
 
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
- 
+
             SearchEnable = FolderPath.CombineLatest(SearchingFlag, (path, y) => !string.IsNullOrEmpty(path) && !y).ToReactiveProperty();
-            
+
             SearchTextWatermark = UseRegex.Select(x => x ? "正規表現" : "検索文字列").ToReadOnlyReactiveProperty();
 
             ControlEnable = SearchingFlag.Select(x => !x).ToReadOnlyReactiveProperty();
@@ -118,16 +119,16 @@ namespace VisualGrep.ViewModels
                         return;
                     }
 
-                    if(!SearchHistory.Contains(SearchText.Value))
+                    if (!SearchHistory.Contains(SearchText.Value))
                     {
                         SearchHistory.Add(SearchText.Value);
                     }
-                    
+
                     if (!SearchDirectoryHistory.Contains(FolderPath.Value))
                     {
                         SearchDirectoryHistory.Add(FolderPath.Value);
                     }
-                    
+
                     if (!string.IsNullOrEmpty(SearchFileName.Value) && !SearchFileNameHistory.Contains(SearchFileName.Value))
                     {
                         SearchFileNameHistory.Add(SearchFileName.Value);
@@ -150,8 +151,8 @@ namespace VisualGrep.ViewModels
                     {
                         await Task.Run(async () =>
                         {
-                        //同期処理でリスト化しているのでここでUIスレッドが固まらなくなる
-                        foreach (var file in files)
+                            //同期処理でリスト化しているのでここでUIスレッドが固まらなくなる
+                            foreach (var file in files)
                             {
                                 SearchFilePath.Value = file;
                                 var list = await SearchFile(file, SearchText.Value, _CancellationTokenSource.Token);
@@ -202,12 +203,12 @@ namespace VisualGrep.ViewModels
             DropCommand.Subscribe(e =>
             {
                 var files = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
-                if(files.Any())
+                if (files.Any())
                 {
                     var path = files.First();
                     var dir = Directory.Exists(path) ? path : Path.GetDirectoryName(path);
 
-                    if(dir != null)
+                    if (dir != null)
                     {
                         FolderPath.Value = dir;
                     }
@@ -231,7 +232,7 @@ namespace VisualGrep.ViewModels
             {
                 var proc = new System.Diagnostics.Process();
 
-                if(SelectedLineInfo.Value == null) return;
+                if (SelectedLineInfo.Value == null) return;
 
                 proc.StartInfo.FileName = SelectedLineInfo.Value.FullPath;
                 proc.StartInfo.UseShellExecute = true;
@@ -245,7 +246,7 @@ namespace VisualGrep.ViewModels
                 var grid = e.Source as DataGrid;
                 var info = grid?.SelectedItem as LineInfo;
 
-                if(info == null)
+                if (info == null)
                 {
                     return;
                 }
@@ -313,7 +314,7 @@ namespace VisualGrep.ViewModels
                         charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
                     }
 
-                    if(charsetDetectedResult.Detected is not null)
+                    if (charsetDetectedResult.Detected is not null)
                     {
                         TextPanelVisibility.Value = Visibility.Visible;
                         if (info != null)
@@ -453,7 +454,7 @@ namespace VisualGrep.ViewModels
 
         private IEnumerable<string> GetContentLines(Format format = Format.Tsv)
         {
-            if(SelectedOutputType.Value.OutputType == OutputType.StringOnly)
+            if (SelectedOutputType.Value.OutputType == OutputType.StringOnly)
             {
                 return LineInfoList.Select(x => x.Text);
             }
@@ -497,7 +498,7 @@ namespace VisualGrep.ViewModels
                 var list = new List<LineInfo>();
 
                 var fName = Path.GetFileName(fileName);
-                if(fName.Contains("~$") && (fileName.EndsWith(".xls") || fileName.EndsWith(".xlsx") || fileName.EndsWith(".xlsb")))
+                if (fName.Contains("~$") && (fileName.EndsWith(".xls") || fileName.EndsWith(".xlsx") || fileName.EndsWith(".xlsb")))
                 {
                     return list;
                 }
@@ -631,7 +632,7 @@ namespace VisualGrep.ViewModels
         private List<string> MatchText(string line, string text, bool useRegex, bool ignoreCase)
         {
             var result = new List<string>();
-            if(useRegex)
+            if (useRegex)
             {
                 var regexOption = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
                 // Regexオブジェクトを作成
@@ -643,7 +644,7 @@ namespace VisualGrep.ViewModels
                 while (match.Success)
                 {
                     result.Add(line);
-                    if(CombineMatches.Value)
+                    if (CombineMatches.Value)
                     {
                         return result;
                     }
@@ -653,7 +654,7 @@ namespace VisualGrep.ViewModels
             else
             {
                 var stringComparison = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal;
-                
+
                 int index = line.IndexOf(text, stringComparison);
 
                 while (index != -1)
