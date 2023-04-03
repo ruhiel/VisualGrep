@@ -65,6 +65,7 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand CsvOutputCommand { get; } = new ReactiveCommand();
         public ReactiveCommand TsvOutputCommand { get; } = new ReactiveCommand();
         public IDialogCoordinator? MahAppsDialogCoordinator { get; set; }
+        public ObservableCollection<string> SearchHistory { get; } = new ObservableCollection<string>();
 
         // ログを出力する変数定義
         static private Logger logger = LogManager.GetCurrentClassLogger();
@@ -101,7 +102,12 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
-                    if (FolderPath.Value == string.Empty)
+                    if (string.IsNullOrEmpty(SearchText.Value))
+                    {
+                        return;
+                    }
+
+                    if (string.IsNullOrEmpty(FolderPath.Value))
                     {
                         return;
                     }
@@ -110,6 +116,11 @@ namespace VisualGrep.ViewModels
                     {
                         return;
                     }
+
+                    if(!SearchHistory.Contains(SearchText.Value))
+                    {
+                        SearchHistory.Add(SearchText.Value);
+                    }                  
 
                     // Stopwatchオブジェクトを作成
                     var stopwatch = new Stopwatch();
@@ -340,7 +351,7 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
-                    var path = SelectPath(true);
+                    var path = SelectPath(true, initialDirectory: string.IsNullOrEmpty(FolderPath.Value) ? null : FolderPath.Value);
 
                     if (path is not null)
                     {
@@ -405,12 +416,12 @@ namespace VisualGrep.ViewModels
                 }
             });
         }
-        private string? SelectPath(bool isFolderPicker = false, string? extenstion = null)
+        private string? SelectPath(bool isFolderPicker = false, string? extenstion = null, string? initialDirectory = null)
         {
             using (var cofd = new CommonOpenFileDialog()
             {
                 Title = "フォルダを選択してください",
-                InitialDirectory = @"C:\Users\Public",
+                InitialDirectory = initialDirectory ?? @"C:\Users\Public",
                 // フォルダ選択モードにする
                 IsFolderPicker = isFolderPicker,
             })
