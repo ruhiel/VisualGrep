@@ -66,7 +66,8 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand TsvOutputCommand { get; } = new ReactiveCommand();
         public IDialogCoordinator? MahAppsDialogCoordinator { get; set; }
         public ObservableCollection<string> SearchHistory { get; } = new ObservableCollection<string>();
-
+        public ObservableCollection<string> SearchDirectoryHistory { get; } = new ObservableCollection<string>();
+        public ObservableCollection<string> SearchFileNameHistory { get; } = new ObservableCollection<string>();
         // ログを出力する変数定義
         static private Logger logger = LogManager.GetCurrentClassLogger();
         public MainWindowViewModel()
@@ -120,7 +121,17 @@ namespace VisualGrep.ViewModels
                     if(!SearchHistory.Contains(SearchText.Value))
                     {
                         SearchHistory.Add(SearchText.Value);
-                    }                  
+                    }
+                    
+                    if (!SearchDirectoryHistory.Contains(FolderPath.Value))
+                    {
+                        SearchDirectoryHistory.Add(FolderPath.Value);
+                    }
+                    
+                    if (!string.IsNullOrEmpty(SearchFileName.Value) && !SearchFileNameHistory.Contains(SearchFileName.Value))
+                    {
+                        SearchFileNameHistory.Add(SearchFileName.Value);
+                    }
 
                     // Stopwatchオブジェクトを作成
                     var stopwatch = new Stopwatch();

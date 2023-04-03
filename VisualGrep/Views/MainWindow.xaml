@@ -64,13 +64,19 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="30"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEnabled="{Binding ControlEnable.Value}"/>
+                    <ComboBox Grid.Column="0" Controls:TextBoxHelper.Watermark="検索ディレクトリ" ItemsSource="{Binding SearchDirectoryHistory}" Text="{Binding FolderPath.Value, Converter={StaticResource PathConverter}}" IsEditable="True" IsEnabled="{Binding ControlEnable.Value}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource PathConverter}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                     <Button Grid.Column="1" Command="{Binding FolderOpenCommand}">
                         <iconPacks:PackIconVaadinIcons Kind="FolderSearch" />
                     </Button>
                 </Grid>
                 <ComboBox Grid.Row="1" Controls:TextBoxHelper.Watermark="{Binding SearchTextWatermark.Value}" ItemsSource="{Binding SearchHistory}" Text="{Binding SearchText.Value}" IsEditable="True" IsEnabled="{Binding ControlEnable.Value}"/>
-                <TextBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEnabled="{Binding ControlEnable.Value}"/>
+                <ComboBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEditable="True" ItemsSource="{Binding SearchFileNameHistory}" IsEnabled="{Binding ControlEnable.Value}"/>
                 <GroupBox Grid.Row="3" Header="オプション">
                     <StackPanel Orientation="Horizontal">
                         <CheckBox Content="サブフォルダを含める" IsChecked="{Binding IncludeSubfolders.Value}" Margin="0,0,10,0"/>
