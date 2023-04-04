@@ -68,6 +68,7 @@ namespace VisualGrep.ViewModels
         public ObservableCollection<string> SearchHistory { get; } = new ObservableCollection<string>();
         public ObservableCollection<string> SearchDirectoryHistory { get; } = new ObservableCollection<string>();
         public ObservableCollection<string> SearchFileNameHistory { get; } = new ObservableCollection<string>();
+        public ReactiveCommand ClosingCommand { get; } = new ReactiveCommand();
         // ログを出力する変数定義
         static private Logger logger = LogManager.GetCurrentClassLogger();
         public MainWindowViewModel()
@@ -78,6 +79,8 @@ namespace VisualGrep.ViewModels
                 builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToFile(fileName: "./logs/${processname}.log");
                 builder.ForLogger().FilterMinLevel(LogLevel.Error).WriteToFile(fileName: "./logs/${processname}.log");
             });
+
+            LoadHistory();
 
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
 
@@ -427,7 +430,13 @@ namespace VisualGrep.ViewModels
                     logger.Error("TsvOutputCommand Error " + ex.Message);
                 }
             });
+
+            ClosingCommand.Subscribe(e =>
+            {
+                SaveHistory();
+            });
         }
+
         private string? SelectPath(bool isFolderPicker = false, string? extenstion = null, string? initialDirectory = null)
         {
             using (var cofd = new CommonOpenFileDialog()
@@ -669,6 +678,28 @@ namespace VisualGrep.ViewModels
             }
 
             return result;
+        }
+
+        private void LoadHistory()
+        {
+            var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Process.GetCurrentProcess().ProcessName, "SearchHistory.xml");
+            if (File.Exists(filePath))
+            {
+                var history = XmlHelper.Deserialize<SearchHistory>(filePath);
+                SearchHistory.ClearAndAddAllSafe(history.SearchTextHistory);
+                SearchDirectoryHistory.ClearAndAddAllSafe(history.SearchDirectoryHistory);
+                SearchFileNameHistory.ClearAndAddAllSafe(history.SearchFileNameHistory);
+            }
+        }
+
+        public void SaveHistory()
+        {
+            var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Process.GetCurrentProcess().ProcessName, "SearchHistory.xml");
+            var history = new SearchHistory();
+            history.SearchTextHistory = new List<string>(SearchHistory.ToList());
+            history.SearchDirectoryHistory = new List<string>(SearchDirectoryHistory.ToList());
+            history.SearchFileNameHistory = new List<string>(SearchFileNameHistory.ToList());
+            XmlHelper.Serialize(history, filePath);
         }
     }
 }

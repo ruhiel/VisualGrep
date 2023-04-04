@@ -41,6 +41,9 @@
         <i:EventTrigger EventName="Drop">
             <rp:EventToReactiveCommand Command="{Binding DropCommand}"/>
         </i:EventTrigger>
+        <i:EventTrigger EventName="Closing">
+            <rp:EventToReactiveCommand Command="{Binding ClosingCommand}"/>
+        </i:EventTrigger>
     </i:Interaction.Triggers>
     <Grid>
         <Grid.RowDefinitions>
