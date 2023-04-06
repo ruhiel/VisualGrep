@@ -69,6 +69,7 @@ namespace VisualGrep.ViewModels
         public ObservableCollection<string> SearchDirectoryHistory { get; } = new ObservableCollection<string>();
         public ObservableCollection<string> SearchFileNameHistory { get; } = new ObservableCollection<string>();
         public ReactiveCommand ClosingCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ClearHistoryCommand { get; } = new ReactiveCommand();
         // ログを出力する変数定義
         static private Logger logger = LogManager.GetCurrentClassLogger();
         public MainWindowViewModel()
@@ -434,6 +435,28 @@ namespace VisualGrep.ViewModels
             ClosingCommand.Subscribe(e =>
             {
                 SaveHistory();
+            });
+
+            ClearHistoryCommand.Subscribe(async e =>
+            {
+                var metroDialogSettings = new MetroDialogSettings()
+                {
+                    AffirmativeButtonText = "はい",
+                    NegativeButtonText = "いいえ",
+                    AnimateHide = true,
+                    AnimateShow = true,
+                    ColorScheme = MetroDialogColorScheme.Theme,
+                };
+
+
+                var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, "履歴クリア", "検索履歴を削除します。よろしいですか？", MessageDialogStyle.AffirmativeAndNegative, settings: metroDialogSettings);
+                if (diagResult == MessageDialogResult.Affirmative)
+                {
+                    SearchHistory.Clear();
+                    SearchDirectoryHistory.Clear();
+                    SearchFileNameHistory.Clear();
+                    SaveHistory();
+                }
             });
         }
 

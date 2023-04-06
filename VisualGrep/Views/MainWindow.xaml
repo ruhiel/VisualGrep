@@ -93,6 +93,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
                 </Grid.RowDefinitions>
                 <Button Grid.Row="0" Command="{Binding SearchCommand}" IsEnabled="{Binding SearchEnable.Value}">
                     <StackPanel Orientation="Horizontal">
@@ -104,6 +105,12 @@
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconRemixIcon Kind="StopCircleLine" />
                         <TextBlock Text="停止"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Row="2" Command="{Binding ClearHistoryCommand}" >
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterialDesign Kind="BorderClear"/>
+                        <TextBlock Text="履歴クリア"/>
                     </StackPanel>
                 </Button>
             </Grid>
