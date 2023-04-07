@@ -97,19 +97,19 @@
                 </Grid.RowDefinitions>
                 <Button Grid.Row="0" Command="{Binding SearchCommand}" IsEnabled="{Binding SearchEnable.Value}">
                     <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconMaterial Kind="FileSearch" />
+                        <iconPacks:PackIconMaterial Kind="FileSearch" Margin="0,0,5,0"/>
                         <TextBlock Text="検索"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Row="1" Command="{Binding StopCommand}" IsEnabled="{Binding SearchStopEnable.Value}">
                     <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconRemixIcon Kind="StopCircleLine" />
-                        <TextBlock Text="停止"/>
+                        <iconPacks:PackIconRemixIcon Kind="StopCircleLine" Margin="0,0,5,0"/>
+                        <TextBlock Text="停止" />
                     </StackPanel>
                 </Button>
                 <Button Grid.Row="2" Command="{Binding ClearHistoryCommand}" >
                     <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconMaterialDesign Kind="BorderClear"/>
+                        <iconPacks:PackIconMaterialDesign Kind="BorderClear" Margin="0,0,5,0"/>
                         <TextBlock Text="履歴クリア"/>
                     </StackPanel>
                 </Button>

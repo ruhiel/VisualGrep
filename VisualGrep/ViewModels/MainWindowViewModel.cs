@@ -155,15 +155,11 @@ namespace VisualGrep.ViewModels
                     {
                         await Task.Run(async () =>
                         {
-                            //同期処理でリスト化しているのでここでUIスレッドが固まらなくなる
                             foreach (var file in files)
                             {
                                 SearchFilePath.Value = file;
                                 var list = await SearchFile(file, SearchText.Value, _CancellationTokenSource.Token);
-                                foreach (var info in list)
-                                {
-                                    LineInfoList.Add(info);
-                                }
+                                LineInfoList.AddAllSafe(list);
                             }
                         });
                     }
@@ -177,11 +173,8 @@ namespace VisualGrep.ViewModels
                         _CancellationTokenSource = new CancellationTokenSource();
 
                         var tempList = LineInfoList.OrderBy(x => x.FileName).ThenBy(x => x.FilePath).ThenBy(x => long.Parse(x.Line)).ToList();
-                        LineInfoList.Clear();
-                        foreach (var info in tempList)
-                        {
-                            LineInfoList.Add(info);
-                        }
+
+                        LineInfoList.ClearAndAddAllSafe(tempList);
 
                         LineInfoListOutputEnabled.Value = LineInfoList.Any();
 
@@ -448,6 +441,10 @@ namespace VisualGrep.ViewModels
                     ColorScheme = MetroDialogColorScheme.Theme,
                 };
 
+                if (MahAppsDialogCoordinator == null)
+                {
+                    return;
+                }
 
                 var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, "履歴クリア", "検索履歴を削除します。よろしいですか？", MessageDialogStyle.AffirmativeAndNegative, settings: metroDialogSettings);
                 if (diagResult == MessageDialogResult.Affirmative)
