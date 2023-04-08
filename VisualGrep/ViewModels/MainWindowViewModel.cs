@@ -108,6 +108,8 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
+                    OutMessage.Value = new List<RichTextItem>();
+
                     if (string.IsNullOrEmpty(SearchText.Value))
                     {
                         return;
@@ -257,9 +259,10 @@ namespace VisualGrep.ViewModels
                     {
                         await ReadFile(info.FullPath, (line) =>
                         {
+                            var matchresult = MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value);
                             var text = new RichTextItem();
                             text.Text = line ?? string.Empty;
-                            text.Foreground = Brushes.Black;
+                            text.Foreground = matchresult.Any() ? Brushes.Red : Brushes.Black;
 
                             list.Add(text);
                         });
@@ -282,7 +285,6 @@ namespace VisualGrep.ViewModels
                         for (var row = 0; row < worksheet.Rows.Count; row++)
                         {
                             var text = new RichTextItem();
-                            text.Foreground = Brushes.Black;
                             var line = string.Empty;
 
                             for (var col = 0; col < worksheet.Columns.Count; col++)
@@ -292,7 +294,8 @@ namespace VisualGrep.ViewModels
                             }
 
                             text.Text = line;
-
+                            var matchresult = MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value);
+                            text.Foreground = matchresult.Any() ? Brushes.Red : Brushes.Black;
                             list.Add(text);
                         }
 
@@ -318,9 +321,10 @@ namespace VisualGrep.ViewModels
                         {
                             await ReadFile(info.FullPath, (line) =>
                             {
+                                var matchresult = MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value);
                                 var text = new RichTextItem();
                                 text.Text = line ?? string.Empty;
-                                text.Foreground = Brushes.Black;
+                                text.Foreground = matchresult.Any() ? Brushes.Red : Brushes.Black;
 
                                 list.Add(text);
                             });
