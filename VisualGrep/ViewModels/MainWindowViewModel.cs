@@ -183,7 +183,6 @@ namespace VisualGrep.ViewModels
                                 var list = await SearchFile(file, SearchText.Value, _CancellationTokenSource.Token);
                                 LineInfoList.AddAllSafe(list);
                                 Counter.Value = Counter.Value + 1;
-                                UpdateElapsed();
                             }
                         });
                     }
