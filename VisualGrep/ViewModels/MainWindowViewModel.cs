@@ -73,6 +73,7 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<int> Counter { get; } = new ReactiveProperty<int>(0);
         public ReactiveProperty<int> Maximum { get; } = new ReactiveProperty<int>(100);
         public ReactiveProperty<string> SearchingInfo { get; } = new ReactiveProperty<string>();
+        public ReactiveProperty<string> SearchingInfoPercent { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<Visibility> SearchingInfoVisibility { get; } = new ReactiveProperty<Visibility>(Visibility.Collapsed);
         private string _OutputFolderPath;
         private Stopwatch _Stopwatch = new Stopwatch();
@@ -756,11 +757,11 @@ namespace VisualGrep.ViewModels
         {
             var totalFiles = Maximum.Value;
             var filesSearched = Counter.Value;
-
             var elapsed = _Stopwatch.Elapsed;
 
             try
             {
+                SearchingInfoPercent.Value = $"{100 * filesSearched / totalFiles}%";
                 SearchingInfo.Value = $"検索ファイル数 {filesSearched}/{totalFiles} 経過時間 {elapsed:hh\\:mm\\:ss}";
                 var remaining = TimeSpan.FromSeconds((totalFiles - filesSearched) * elapsed.TotalSeconds / filesSearched);
                 SearchingInfo.Value = $"検索ファイル数 {filesSearched}/{totalFiles} 経過時間 {elapsed:hh\\:mm\\:ss} 残り時間 {remaining:hh\\:mm\\:ss}";
