@@ -70,6 +70,13 @@ namespace VisualGrep.ViewModels
         public ObservableCollection<string> SearchFileNameHistory { get; } = new ObservableCollection<string>();
         public ReactiveCommand ClosingCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ClearHistoryCommand { get; } = new ReactiveCommand();
+        public ReactiveProperty<int> Counter { get; } = new ReactiveProperty<int>(0);
+        public ReactiveProperty<int> Maximum { get; } = new ReactiveProperty<int>(100);
+        public ReactiveProperty<string> SearchingInfo { get; } = new ReactiveProperty<string>();
+        public ReactiveProperty<Visibility> SearchingInfoVisibility { get; } = new ReactiveProperty<Visibility>(Visibility.Collapsed);
+        private string _OutputFolderPath;
+        private Stopwatch _Stopwatch = new Stopwatch();
+
         // ログを出力する変数定義
         static private Logger logger = LogManager.GetCurrentClassLogger();
         public MainWindowViewModel()
@@ -140,18 +147,30 @@ namespace VisualGrep.ViewModels
                         SearchFileNameHistory.Add(SearchFileName.Value);
                     }
 
-                    // Stopwatchオブジェクトを作成
-                    var stopwatch = new Stopwatch();
-                    stopwatch.Start();
+                    _Stopwatch = new Stopwatch();
+
+                    _Stopwatch.Start();
 
                     LineInfoList.Clear();
 
                     SearchingFlag.Value = true;
 
+                    SearchingInfoVisibility.Value = Visibility.Visible;
+
+                    var source = Observable.Interval(TimeSpan.FromMilliseconds(500));
+
+                    var subscription = source.Subscribe(
+                        i => UpdateElapsed(),
+                        ex => Console.WriteLine("OnError({0})", ex.Message),
+                        () => Console.WriteLine("Completed()"));
+
                     var files = FileUtils.GetAllFiles(FolderPath.Value, IncludeSubfolders.Value)
                         .Select((value, index) => value)
                         .Where(x => SearchFileName.Value == string.Empty ? true : x.Contains(SearchFileName.Value))
                         .ToList();
+
+                    Maximum.Value = files.Count;
+                    Counter.Value = 0;
 
                     try
                     {
@@ -162,6 +181,8 @@ namespace VisualGrep.ViewModels
                                 SearchFilePath.Value = file;
                                 var list = await SearchFile(file, SearchText.Value, _CancellationTokenSource.Token);
                                 LineInfoList.AddAllSafe(list);
+                                Counter.Value = Counter.Value + 1;
+                                UpdateElapsed();
                             }
                         });
                     }
@@ -180,11 +201,15 @@ namespace VisualGrep.ViewModels
 
                         LineInfoListOutputEnabled.Value = LineInfoList.Any();
 
-                        stopwatch.Stop();
+                        _Stopwatch.Stop();
 
-                        SearchFilePath.Value = $"終了しました。({stopwatch.Elapsed:mm\\:ss\\.fff})";
+                        SearchFilePath.Value = $"終了しました。({_Stopwatch.Elapsed:mm\\:ss\\.fff})";
 
                         SearchingFlag.Value = false;
+
+                        subscription.Dispose();
+
+                        SearchingInfoVisibility.Value = Visibility.Collapsed;
                     }
 
                 }
@@ -381,9 +406,10 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
-                    var path = SelectPath(extenstion: ".csv");
+                    var path = SelectPath(extenstion: ".csv", initialDirectory: string.IsNullOrEmpty(_OutputFolderPath) ? null : _OutputFolderPath);
                     if (path != null)
                     {
+                        _OutputFolderPath = Path.GetDirectoryName(path);
                         using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
                         {
                             foreach (var line in GetContentLines(Format.Csv))
@@ -407,9 +433,10 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
-                    var path = SelectPath(extenstion: ".tsv");
+                    var path = SelectPath(extenstion: ".tsv", initialDirectory: string.IsNullOrEmpty(_OutputFolderPath) ? null : _OutputFolderPath);
                     if (path != null)
                     {
+                        _OutputFolderPath = Path.GetDirectoryName(path);
                         using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
                         {
                             foreach (var line in GetContentLines(Format.Tsv))
@@ -724,6 +751,24 @@ namespace VisualGrep.ViewModels
             history.SearchDirectoryHistory = new List<string>(SearchDirectoryHistory.ToList());
             history.SearchFileNameHistory = new List<string>(SearchFileNameHistory.ToList());
             XmlHelper.Serialize(history, filePath);
+        }
+        private void UpdateElapsed()
+        {
+            var totalFiles = Maximum.Value;
+            var filesSearched = Counter.Value;
+
+            var elapsed = _Stopwatch.Elapsed;
+
+            try
+            {
+                SearchingInfo.Value = $"検索ファイル数 {filesSearched}/{totalFiles} 経過時間 {elapsed:hh\\:mm\\:ss}";
+                var remaining = TimeSpan.FromSeconds((totalFiles - filesSearched) * elapsed.TotalSeconds / filesSearched);
+                SearchingInfo.Value = $"検索ファイル数 {filesSearched}/{totalFiles} 経過時間 {elapsed:hh\\:mm\\:ss} 残り時間 {remaining:hh\\:mm\\:ss}";
+            }
+            catch (OverflowException)
+            {
+
+            }
         }
     }
 }

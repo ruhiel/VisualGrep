@@ -180,7 +180,16 @@
                     </DataTemplate>
                 </TabControl.ContentTemplate>
             </TabControl>
-            <TextBlock Grid.Row="3" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="8*"/>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding SearchFilePath.Value}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding SearchingInfo.Value}" VerticalAlignment="Center" Visibility="{Binding SearchingInfoVisibility.Value}"/>
+                <ProgressBar Grid.Column="2" Minimum="0" Maximum="{Binding Maximum.Value}" Value="{Binding Counter.Value}" Visibility="{Binding SearchingInfoVisibility.Value}"/>
+            </Grid>
         </Grid>
     </Grid>
 </mah:MetroWindow>
