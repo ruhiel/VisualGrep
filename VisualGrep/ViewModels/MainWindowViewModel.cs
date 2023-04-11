@@ -562,24 +562,31 @@ namespace VisualGrep.ViewModels
 
         private void ReadExcel(string fileName, Action<DataTable> action)
         {
-            using (FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
+            try
             {
-                using (var reader = ExcelReaderFactory.CreateReader(stream))
+                using (FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
                 {
-                    //全シート全セルを読み取り
-                    var dataset = reader.AsDataSet();
-                    for (var i = 0; i < dataset.Tables.Count; i++)
+                    using (var reader = ExcelReaderFactory.CreateReader(stream))
                     {
-                        var worksheet = dataset.Tables[i];
-
-                        if (worksheet is null)
+                        //全シート全セルを読み取り
+                        var dataset = reader.AsDataSet();
+                        for (var i = 0; i < dataset.Tables.Count; i++)
                         {
-                            continue;
-                        }
+                            var worksheet = dataset.Tables[i];
 
-                        action.Invoke(worksheet);
+                            if (worksheet is null)
+                            {
+                                continue;
+                            }
+
+                            action.Invoke(worksheet);
+                        }
                     }
                 }
+            }
+            catch (Exception)
+            {
+
             }
         }
         private Task<List<LineInfo>> SearchFile(string fileName, string text, CancellationToken token)
