@@ -138,12 +138,63 @@
                     </DataGrid.Columns>
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="MouseDoubleClick">
-                            <rp:EventToReactiveCommand Command="{Binding LineInfoMouseDoubleClickCommand}"/>
+                            <rp:EventToReactiveCommand Command="{Binding OpenFileCommand}"/>
                         </i:EventTrigger>
                         <i:EventTrigger EventName="SelectionChanged">
                             <rp:EventToReactiveCommand Command="{Binding LineInfoSelectionChanged}"/>
                         </i:EventTrigger>
                     </i:Interaction.Triggers>
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Name="contextmenu1">
+                                <MenuItem.Header>
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconFeatherIcons Kind="File" Margin="0,0,5,0"/>
+                                        <TextBlock Text="ファイルを開く"/>
+                                    </StackPanel>
+                                </MenuItem.Header>
+                                <i:Interaction.Triggers>
+                                    <i:EventTrigger EventName="Click">
+                                        <rp:EventToReactiveCommand Command="{Binding OpenFileCommand}"/>
+                                    </i:EventTrigger>
+                                </i:Interaction.Triggers>
+                            </MenuItem>
+                            <MenuItem Name="contextmenu2">
+                                <MenuItem.Header>
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconFontAwesome Kind="FolderOpenRegular" Margin="0,0,5,0"/>
+                                        <TextBlock Text="ファイルのフォルダを開く"/>
+                                    </StackPanel>
+                                </MenuItem.Header>
+                                <i:Interaction.Triggers>
+                                    <i:EventTrigger EventName="Click">
+                                        <rp:EventToReactiveCommand Command="{Binding OpenFileFolderCommand}"/>
+                                    </i:EventTrigger>
+                                </i:Interaction.Triggers>
+                            </MenuItem>
+                            <MenuItem Name="contextmenu3" Header="ファイルのフルパスをコピー">
+                                <i:Interaction.Triggers>
+                                    <i:EventTrigger EventName="Click">
+                                        <rp:EventToReactiveCommand Command="{Binding ClipboardCopyFileFullPathCommand}"/>
+                                    </i:EventTrigger>
+                                </i:Interaction.Triggers>
+                            </MenuItem>
+                            <MenuItem Name="contextmenu4" Header="ファイル名をコピー">
+                                <i:Interaction.Triggers>
+                                    <i:EventTrigger EventName="Click">
+                                        <rp:EventToReactiveCommand Command="{Binding ClipboardCopyFileNameCommand}"/>
+                                    </i:EventTrigger>
+                                </i:Interaction.Triggers>
+                            </MenuItem>
+                            <MenuItem Name="contextmenu5" Header="ファイルのフォルダパスをコピー">
+                                <i:Interaction.Triggers>
+                                    <i:EventTrigger EventName="Click">
+                                        <rp:EventToReactiveCommand Command="{Binding ClipboardCopyFileFolderPathCommand}"/>
+                                    </i:EventTrigger>
+                                </i:Interaction.Triggers>
+                            </MenuItem>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
                 </DataGrid>
                 <StackPanel Grid.Row="1" Orientation="Horizontal">
                     <ComboBox Margin="0,0,5,0" ItemsSource="{Binding OutputTypeList}" SelectedItem="{Binding SelectedOutputType.Value}" DisplayMemberPath="DisplayName"/>

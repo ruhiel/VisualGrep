@@ -45,7 +45,7 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand<DragEventArgs> DropCommand { get; } = new ReactiveCommand<DragEventArgs>();
         public ReactiveCommand<DragEventArgs> PreviewDragOverCommand { get; } = new ReactiveCommand<DragEventArgs>();
         public ReactiveProperty<LineInfo> SelectedLineInfo { get; } = new ReactiveProperty<LineInfo>();
-        public ReactiveCommand<MouseButtonEventArgs> LineInfoMouseDoubleClickCommand { get; } = new ReactiveCommand<MouseButtonEventArgs>();
+        public ReactiveCommand<MouseButtonEventArgs> OpenFileCommand { get; } = new ReactiveCommand<MouseButtonEventArgs>();
         public ReactiveCommand<SelectionChangedEventArgs> LineInfoSelectionChanged { get; } = new ReactiveCommand<SelectionChangedEventArgs>();
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
         public ObservableCollection<TabPanelViewModel> TabPanels { get; } = new ObservableCollection<TabPanelViewModel>();
@@ -81,6 +81,10 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> SearchResultInfo { get; } = new ReactiveProperty<string>();
         // ログを出力する変数定義
         static private Logger logger = LogManager.GetCurrentClassLogger();
+        public ReactiveCommand OpenFileFolderCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ClipboardCopyFileFullPathCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ClipboardCopyFileNameCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ClipboardCopyFileFolderPathCommand { get; } = new ReactiveCommand();
         public MainWindowViewModel()
         {
             LogManager.Setup().LoadConfiguration(builder =>
@@ -255,9 +259,9 @@ namespace VisualGrep.ViewModels
                 e.Handled = e.Data.GetDataPresent(DataFormats.FileDrop);
             });
 
-            LineInfoMouseDoubleClickCommand.Subscribe(e =>
+            OpenFileCommand.Subscribe(e =>
             {
-                var proc = new System.Diagnostics.Process();
+                var proc = new Process();
 
                 if (SelectedLineInfo.Value == null) return;
 
@@ -488,6 +492,30 @@ namespace VisualGrep.ViewModels
                     SearchFileNameHistory.Clear();
                     SaveHistory();
                 }
+            });
+
+            OpenFileFolderCommand.Subscribe(e =>
+            {
+                var path = SelectedLineInfo.Value.FilePath;
+                Process.Start(path);
+            });
+
+            ClipboardCopyFileFullPathCommand.Subscribe(e =>
+            {
+                var path = SelectedLineInfo.Value.FullPath;
+                Clipboard.SetText(path);
+            });
+
+            ClipboardCopyFileNameCommand.Subscribe(e =>
+            {
+                var fileName = SelectedLineInfo.Value.FileName;
+                Clipboard.SetText(fileName);
+            });
+
+            ClipboardCopyFileFolderPathCommand.Subscribe(e =>
+            {
+                var path =  SelectedLineInfo.Value.FilePath;
+                Clipboard.SetText(path);
             });
         }
 
