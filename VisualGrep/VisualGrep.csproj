@@ -7,7 +7,12 @@
     <UseWPF>true</UseWPF>
 	<LangVersion>9.0</LangVersion>
 	<PlatformTarget>AnyCPU</PlatformTarget>
+	<ApplicationIcon>510a76c3d5870e76ce29cc149737a054_xxo.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="510a76c3d5870e76ce29cc149737a054_xxo.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ExcelDataReader" Version="3.6.0" />
