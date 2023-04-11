@@ -187,7 +187,7 @@
                     <ColumnDefinition Width="3*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding SearchFilePath.Value, Converter={StaticResource AbbreviationConverter}, ConverterParameter=200}" Visibility="{Binding SearchingInfoVisibility.Value}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="0" Text="{Binding SearchFilePath.Value, Converter={StaticResource AbbreviationConverter}, ConverterParameter=100}" Visibility="{Binding SearchingInfoVisibility.Value}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="0" Text="{Binding SearchResultInfo.Value}" Visibility="{Binding SearchingResultInfoVisibility.Value}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" Text="{Binding SearchingInfo.Value}" VerticalAlignment="Center" Visibility="{Binding SearchingInfoVisibility.Value}"/>
                 <Grid Grid.Column="2">
