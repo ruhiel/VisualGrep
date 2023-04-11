@@ -343,7 +343,7 @@ namespace VisualGrep.ViewModels
                     DetectionResult? charsetDetectedResult = null;
                     using (var stream = new FileStream(info.FullPath, FileMode.Open))
                     {
-                        charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
+                        charsetDetectedResult = DetectFromStream(stream);
                     }
 
                     if (charsetDetectedResult.Detected is not null)
@@ -640,7 +640,7 @@ namespace VisualGrep.ViewModels
                     {
                         using (var stream = new FileStream(fileName, FileMode.Open))
                         {
-                            charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
+                            charsetDetectedResult = DetectFromStream(stream);
                         }
 
                         if (charsetDetectedResult.Detected == null)
@@ -711,7 +711,7 @@ namespace VisualGrep.ViewModels
 
                 using (var stream = new FileStream(fileName, FileMode.Open))
                 {
-                    charsetDetectedResult = CharsetDetector.DetectFromStream(stream);
+                    charsetDetectedResult = DetectFromStream(stream);
                 }
 
                 // ファイルをオープンする
@@ -807,6 +807,11 @@ namespace VisualGrep.ViewModels
             {
 
             }
+        }
+
+        private DetectionResult DetectFromStream(Stream stream)
+        {
+            return CharsetDetector.DetectFromStream(stream, 1024 * 1024);
         }
     }
 }
