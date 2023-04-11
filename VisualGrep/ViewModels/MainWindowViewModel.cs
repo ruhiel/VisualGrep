@@ -75,9 +75,10 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> SearchingInfo { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<string> SearchingInfoPercent { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<Visibility> SearchingInfoVisibility { get; } = new ReactiveProperty<Visibility>(Visibility.Collapsed);
+        public ReactiveProperty<Visibility> SearchingResultInfoVisibility { get; }
         private string _OutputFolderPath;
         private Stopwatch _Stopwatch = new Stopwatch();
-
+        public ReactiveProperty<string> SearchResultInfo { get; } = new ReactiveProperty<string>();
         // ログを出力する変数定義
         static private Logger logger = LogManager.GetCurrentClassLogger();
         public MainWindowViewModel()
@@ -90,6 +91,8 @@ namespace VisualGrep.ViewModels
             });
 
             LoadHistory();
+
+            SearchingResultInfoVisibility = SearchingInfoVisibility.Select(x => x == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible).ToReactiveProperty();
 
             BindingOperations.EnableCollectionSynchronization(LineInfoList, new object());
 
@@ -203,7 +206,7 @@ namespace VisualGrep.ViewModels
 
                         _Stopwatch.Stop();
 
-                        SearchFilePath.Value = $"終了しました。({_Stopwatch.Elapsed:mm\\:ss\\.fff})";
+                        SearchResultInfo.Value = $"終了しました。(検索ファイル数 {Maximum.Value} 検索時間 {_Stopwatch.Elapsed:hh\\:mm\\:ss})";
 
                         SearchingFlag.Value = false;
 
@@ -763,7 +766,7 @@ namespace VisualGrep.ViewModels
                 SearchingInfoPercent.Value = $"{100 * filesSearched / totalFiles}%";
                 SearchingInfo.Value = $"検索ファイル数 {filesSearched}/{totalFiles} 経過時間 {elapsed:hh\\:mm\\:ss}";
                 var remaining = TimeSpan.FromSeconds((totalFiles - filesSearched) * elapsed.TotalSeconds / filesSearched);
-                SearchingInfo.Value = $"検索ファイル数 {filesSearched}/{totalFiles} 経過時間 {elapsed:hh\\:mm\\:ss} 残り時間 {remaining:hh\\:mm\\:ss}";
+                SearchingInfo.Value = $"{SearchingInfo.Value} 残り時間 {remaining:hh\\:mm\\:ss}";
             }
             catch (OverflowException)
             {
