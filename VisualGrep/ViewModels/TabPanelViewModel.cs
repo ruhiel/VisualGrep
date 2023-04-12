@@ -1,4 +1,5 @@
-﻿using Reactive.Bindings;
+﻿using ICSharpCode.AvalonEdit.Document;
+using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,6 @@ namespace VisualGrep.ViewModels
     public class TabPanelViewModel
     {
         public ReactiveProperty<string> Header { get; } = new ReactiveProperty<string>(string.Empty);
-        public ReactiveProperty<List<RichTextItem>> OutMessage { get; } = new ReactiveProperty<List<RichTextItem>>();
+        public ReactiveProperty<TextDocument> TextView { get; } = new ReactiveProperty<TextDocument>();
     }
 }

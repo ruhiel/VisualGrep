@@ -12,7 +12,7 @@
         xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:c="clr-namespace:VisualGrep.Controls"
+        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
         Title="VisualGrep"
         TitleCharacterCasing="Normal"
         Height="600"
@@ -32,7 +32,6 @@
     </mah:MetroWindow.DataContext>
     <mah:MetroWindow.Resources>
         <converter:PathConverter x:Key="PathConverter"/>
-        <converter:RichTextItemsToDocumentConverter x:Key="RichTextItemsToDocumentConverter"/>
         <converter:StringAbbreviationConverter x:Key="AbbreviationConverter"/>
     </mah:MetroWindow.Resources>
     <i:Interaction.Triggers>
@@ -219,7 +218,13 @@
                 </StackPanel>
             </Grid>
             <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" />
-            <c:BindableRichTextBox Grid.Row="2" Visibility="{Binding TextPanelVisibility.Value}" IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}" VerticalScrollBarVisibility="Visible"/>
+            <avalonEdit:TextEditor Grid.Row="2" x:Name="textEditor"
+                               Margin="10"
+                               Document="{Binding TextView.Value}"
+                               FontFamily="Consolas"
+                               FontSize="10pt"
+                               ShowLineNumbers="True"
+                               IsReadOnly="True"/>
             <TabControl Grid.Row="2" Visibility="{Binding ExcelPanelVisibility.Value}" x:Name="tabControl" Margin="5" ItemsSource="{Binding TabPanels}">
                 <TabControl.ItemTemplate>
                     <DataTemplate>
@@ -228,7 +233,13 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <c:BindableRichTextBox IsReadOnly="True" IsDocumentEnabled="True" Document="{Binding OutMessage.Value, Converter={StaticResource RichTextItemsToDocumentConverter}}"/>
+                        <avalonEdit:TextEditor Grid.Row="2" x:Name="textEditorForExcel"
+                               Margin="10"
+                               Document="{Binding TextView.Value}"
+                               FontFamily="Consolas"
+                               FontSize="10pt"
+                               ShowLineNumbers="True"
+                               IsReadOnly="True"/>
                     </DataTemplate>
                 </TabControl.ContentTemplate>
             </TabControl>

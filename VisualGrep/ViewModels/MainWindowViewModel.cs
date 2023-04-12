@@ -26,6 +26,8 @@ using MahApps.Metro.Controls.Dialogs;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using ICSharpCode.AvalonEdit.Document;
+using ICSharpCode.AvalonEdit;
 
 namespace VisualGrep.ViewModels
 {
@@ -50,7 +52,7 @@ namespace VisualGrep.ViewModels
         public ObservableCollection<LineInfo> LineInfoList { get; } = new ObservableCollection<LineInfo>();
         public ObservableCollection<TabPanelViewModel> TabPanels { get; } = new ObservableCollection<TabPanelViewModel>();
         public ReactiveProperty<string> SearchFilePath { get; } = new ReactiveProperty<string>(string.Empty);
-        public ReactiveProperty<List<RichTextItem>> OutMessage { get; } = new ReactiveProperty<List<RichTextItem>>();
+        public ReactiveProperty<TextDocument> TextView { get; } = new ReactiveProperty<TextDocument>();
         private CancellationTokenSource _CancellationTokenSource = new CancellationTokenSource();
         public ReadOnlyReactiveProperty<bool> ControlEnable { get; }
         public ReactiveProperty<bool> SearchingFlag { get; } = new ReactiveProperty<bool>(false);
@@ -123,7 +125,7 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
-                    OutMessage.Value = new List<RichTextItem>();
+                    TextView.Value = new TextDocument();
 
                     if (string.IsNullOrEmpty(SearchText.Value))
                     {
@@ -299,7 +301,15 @@ namespace VisualGrep.ViewModels
                             list.Add(text);
                         });
 
-                        OutMessage.Value = list;
+                        TextView.Value.Text = string.Join("\r\n", list.Select(x => x.Text).ToList());
+
+                        var window = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w is MainWindow);
+                        var mw = (MainWindow)window;
+
+                        var targetLineNumber = int.Parse(info.Line);
+                        var editor = mw.textEditor;
+                        // スクロールバーを目的の位置に移動
+                        editor.ScrollTo(targetLineNumber, 0);
                     }
                 }
                 else if (ext == ".xls" || ext == ".xlsx" || ext == ".xlsb")
@@ -331,7 +341,8 @@ namespace VisualGrep.ViewModels
                             list.Add(text);
                         }
 
-                        panel.OutMessage.Value = list;
+                        panel.TextView.Value = new TextDocument();
+                        panel.TextView.Value.Text = string.Join("\r\n", list.Select(x => x.Text).ToList());
 
                         TabPanels.Add(panel);
                     };
@@ -361,7 +372,7 @@ namespace VisualGrep.ViewModels
                                 list.Add(text);
                             });
 
-                            OutMessage.Value = list;
+                            TextView.Value.Text = string.Join("\r\n", list.Select(x => x.Text).ToList());
                         }
                     }
                 }
