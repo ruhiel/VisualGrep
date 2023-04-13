@@ -129,8 +129,8 @@
                 </Grid.RowDefinitions>
                 <DataGrid Grid.Row="0" IsEnabled="{Binding ControlEnable.Value}" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="ファイル名" Width="150" Binding="{Binding FileName}" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="場所" Width="150" Binding="{Binding FilePath}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="ファイル名" Width="200" Binding="{Binding FileName}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="場所" Width="200" Binding="{Binding FilePath}" IsReadOnly="True"/>
                         <DataGridTextColumn Header="シート" Width="60" Binding="{Binding Sheet}" IsReadOnly="True"/>
                         <DataGridTextColumn Header="行" Width="60" Binding="{Binding Line}" IsReadOnly="True"/>
                         <DataGridTextColumn Header="文字列" Width="*" Binding="{Binding Text}" IsReadOnly="True"/>

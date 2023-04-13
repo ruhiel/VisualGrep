@@ -796,9 +796,9 @@ namespace VisualGrep.ViewModels
         {
             var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Process.GetCurrentProcess().ProcessName, "SearchHistory.xml");
             var history = new SearchHistory();
-            history.SearchTextHistory = new List<string>(SearchHistory.ToList());
-            history.SearchDirectoryHistory = new List<string>(SearchDirectoryHistory.ToList());
-            history.SearchFileNameHistory = new List<string>(SearchFileNameHistory.ToList());
+            history.SearchTextHistory = new List<string>(SearchHistory.OrderBy(x => x).ToList());
+            history.SearchDirectoryHistory = new List<string>(SearchDirectoryHistory.OrderBy(x => x).ToList());
+            history.SearchFileNameHistory = new List<string>(SearchFileNameHistory.OrderBy(x => x).ToList());
             XmlHelper.Serialize(history, filePath);
         }
         private void UpdateElapsed()
