@@ -176,7 +176,7 @@ namespace VisualGrep.ViewModels
 
                     var files = FileUtils.GetAllFiles(FolderPath.Value, IncludeSubfolders.Value)
                         .Select((value, index) => value)
-                        .Where(x => SearchFileName.Value == string.Empty ? true : x.Contains(SearchFileName.Value))
+                        .Where(x => CheckFileName(x))
                         .ToList();
 
                     Maximum.Value = files.Count;
@@ -528,6 +528,18 @@ namespace VisualGrep.ViewModels
                 var path =  SelectedLineInfo.Value.FilePath;
                 Clipboard.SetText(path);
             });
+        }
+
+        private bool CheckFileName(string fileName)
+        {
+            if(string.IsNullOrEmpty(SearchFileName.Value))
+            {
+                return true;
+            }
+
+            var regex = new Regex(SearchFileName.Value);
+
+            return regex.Match(fileName).Success;
         }
 
         private string? SelectPath(bool isFolderPicker = false, string? extenstion = null, string? initialDirectory = null)
