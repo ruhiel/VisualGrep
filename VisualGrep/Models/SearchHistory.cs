@@ -11,5 +11,6 @@ namespace VisualGrep.Models
         public List<string> SearchTextHistory { get; set; }
         public List<string> SearchDirectoryHistory { get; set; }
         public List<string> SearchFileNameHistory { get; set; }
+        public List<string> ExcludeFilePathHistory { get; set; }
     }
 }

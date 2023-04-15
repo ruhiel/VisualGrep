@@ -78,8 +78,6 @@ namespace VisualGrep.ViewModels
         public ReactiveProperty<string> SearchingInfoPercent { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<Visibility> SearchingInfoVisibility { get; } = new ReactiveProperty<Visibility>(Visibility.Collapsed);
         public ReactiveProperty<Visibility> SearchingResultInfoVisibility { get; }
-        private string _OutputFolderPath;
-        private Stopwatch _Stopwatch = new Stopwatch();
         public ReactiveProperty<string> SearchResultInfo { get; } = new ReactiveProperty<string>();
         // ログを出力する変数定義
         static private Logger logger = LogManager.GetCurrentClassLogger();
@@ -87,6 +85,11 @@ namespace VisualGrep.ViewModels
         public ReactiveCommand ClipboardCopyFileFullPathCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ClipboardCopyFileNameCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ClipboardCopyFileFolderPathCommand { get; } = new ReactiveCommand();
+        public ReactiveProperty<string> ExcludeFilePath { get; } = new ReactiveProperty<string>();
+        public ObservableCollection<string> ExcludeFilePathHistory { get; } = new ObservableCollection<string>();
+        private string _OutputFolderPath;
+        private Stopwatch _Stopwatch = new Stopwatch();
+
         public MainWindowViewModel()
         {
             LogManager.Setup().LoadConfiguration(builder =>
@@ -150,6 +153,11 @@ namespace VisualGrep.ViewModels
                     if (!SearchDirectoryHistory.Contains(FolderPath.Value))
                     {
                         SearchDirectoryHistory.Add(FolderPath.Value);
+                    }
+                    
+                    if (!string.IsNullOrEmpty(ExcludeFilePath.Value) &&  !ExcludeFilePathHistory.Contains(ExcludeFilePath.Value))
+                    {
+                        ExcludeFilePathHistory.Add(ExcludeFilePath.Value);
                     }
 
                     if (!string.IsNullOrEmpty(SearchFileName.Value) && !SearchFileNameHistory.Contains(SearchFileName.Value))
@@ -501,6 +509,7 @@ namespace VisualGrep.ViewModels
                     SearchHistory.Clear();
                     SearchDirectoryHistory.Clear();
                     SearchFileNameHistory.Clear();
+                    ExcludeFilePathHistory.Clear();
                     SaveHistory();
                 }
             });
@@ -532,7 +541,18 @@ namespace VisualGrep.ViewModels
 
         private bool CheckFileName(string fileName)
         {
-            if(string.IsNullOrEmpty(SearchFileName.Value))
+            if (!string.IsNullOrEmpty(ExcludeFilePath.Value))
+            {
+                // 除外ファイルパス
+                var excludeRegex = new Regex(ExcludeFilePath.Value);
+
+                if(excludeRegex.Match(fileName).Success)
+                {
+                    return false;
+                }
+            }
+
+            if (string.IsNullOrEmpty(SearchFileName.Value))
             {
                 return true;
             }
@@ -801,6 +821,7 @@ namespace VisualGrep.ViewModels
                 SearchHistory.ClearAndAddAllSafe(history.SearchTextHistory);
                 SearchDirectoryHistory.ClearAndAddAllSafe(history.SearchDirectoryHistory);
                 SearchFileNameHistory.ClearAndAddAllSafe(history.SearchFileNameHistory);
+                ExcludeFilePathHistory.ClearAndAddAllSafe(history.ExcludeFilePathHistory);
             }
         }
 
@@ -811,6 +832,7 @@ namespace VisualGrep.ViewModels
             history.SearchTextHistory = new List<string>(SearchHistory.OrderBy(x => x).ToList());
             history.SearchDirectoryHistory = new List<string>(SearchDirectoryHistory.OrderBy(x => x).ToList());
             history.SearchFileNameHistory = new List<string>(SearchFileNameHistory.OrderBy(x => x).ToList());
+            history.ExcludeFilePathHistory = new List<string>(ExcludeFilePathHistory.OrderBy(x => x).ToList());
             XmlHelper.Serialize(history, filePath);
         }
         private void UpdateElapsed()

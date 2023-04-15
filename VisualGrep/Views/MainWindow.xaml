@@ -46,17 +46,22 @@
         </i:EventTrigger>
     </i:Interaction.Triggers>
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="30*"/>
+            <ColumnDefinition Width="469*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="160"/>
+            <RowDefinition Height="190"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="8*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="30"/>
@@ -79,8 +84,9 @@
                     </Button>
                 </Grid>
                 <ComboBox Grid.Row="1" Controls:TextBoxHelper.Watermark="{Binding SearchTextWatermark.Value}" ItemsSource="{Binding SearchHistory}" Text="{Binding SearchText.Value}" IsEditable="True" IsEnabled="{Binding ControlEnable.Value}"/>
-                <ComboBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名" Text="{Binding SearchFileName.Value}" IsEditable="True" ItemsSource="{Binding SearchFileNameHistory}" IsEnabled="{Binding ControlEnable.Value}"/>
-                <GroupBox Grid.Row="3" Header="オプション">
+                <ComboBox Grid.Row="2" Controls:TextBoxHelper.Watermark="ファイル名(正規表現可)" Text="{Binding SearchFileName.Value}" IsEditable="True" ItemsSource="{Binding SearchFileNameHistory}" IsEnabled="{Binding ControlEnable.Value}"/>
+                <ComboBox Grid.Row="3" Controls:TextBoxHelper.Watermark="除外するパス文字列(正規表現可)" Text="{Binding ExcludeFilePath.Value}" IsEditable="True" ItemsSource="{Binding ExcludeFilePathHistory}" IsEnabled="{Binding ControlEnable.Value}"/>
+                <GroupBox Grid.Row="4" Header="オプション">
                     <StackPanel Orientation="Horizontal">
                         <CheckBox Content="サブフォルダを含める" IsChecked="{Binding IncludeSubfolders.Value}" Margin="0,0,10,0"/>
                         <CheckBox Content="正規表現" IsChecked="{Binding UseRegex.Value}" Margin="0,0,10,0"/>
@@ -115,7 +121,7 @@
                 </Button>
             </Grid>
         </Grid>
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Grid.ColumnSpan="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="5*"/>
                 <RowDefinition Height="5"/>
