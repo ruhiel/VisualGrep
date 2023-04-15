@@ -99,7 +99,7 @@ namespace VisualGrep.ViewModels
                 builder.ForLogger().FilterMinLevel(LogLevel.Error).WriteToFile(fileName: "./logs/${processname}.log");
             });
 
-            LoadHistory();
+            Logic.LoadHistory(SearchHistory, SearchDirectoryHistory, SearchFileNameHistory, ExcludeFilePathHistory);
 
             SearchingResultInfoVisibility = SearchingInfoVisibility.Select(x => x == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible).ToReactiveProperty();
 
@@ -154,8 +154,8 @@ namespace VisualGrep.ViewModels
                     {
                         SearchDirectoryHistory.Add(FolderPath.Value);
                     }
-                    
-                    if (!string.IsNullOrEmpty(ExcludeFilePath.Value) &&  !ExcludeFilePathHistory.Contains(ExcludeFilePath.Value))
+
+                    if (!string.IsNullOrEmpty(ExcludeFilePath.Value) && !ExcludeFilePathHistory.Contains(ExcludeFilePath.Value))
                     {
                         ExcludeFilePathHistory.Add(ExcludeFilePath.Value);
                     }
@@ -178,13 +178,30 @@ namespace VisualGrep.ViewModels
                     var source = Observable.Interval(TimeSpan.FromMilliseconds(500));
 
                     var subscription = source.Subscribe(
-                        i => UpdateElapsed(),
+                        i =>
+                        {
+                            var totalFiles = Maximum.Value;
+                            var filesSearched = Counter.Value;
+                            var elapsed = _Stopwatch.Elapsed;
+
+                            try
+                            {
+                                SearchingInfoPercent.Value = $"{100 * filesSearched / totalFiles}%";
+                                SearchingInfo.Value = $"検索ファイル数 {filesSearched}/{totalFiles} 経過時間 {elapsed:hh\\:mm\\:ss}";
+                                var remaining = TimeSpan.FromSeconds((totalFiles - filesSearched) * elapsed.TotalSeconds / filesSearched);
+                                SearchingInfo.Value = $"{SearchingInfo.Value} 残り時間 {remaining:hh\\:mm\\:ss}";
+                            }
+                            catch (OverflowException)
+                            {
+
+                            }
+                        },
                         ex => Console.WriteLine("OnError({0})", ex.Message),
                         () => Console.WriteLine("Completed()"));
 
                     var files = FileUtils.GetAllFiles(FolderPath.Value, IncludeSubfolders.Value)
                         .Select((value, index) => value)
-                        .Where(x => CheckFileName(x))
+                        .Where(x => FileLogic.CheckFileName(x, SearchFileName.Value, ExcludeFilePath.Value))
                         .ToList();
 
                     Maximum.Value = files.Count;
@@ -197,7 +214,7 @@ namespace VisualGrep.ViewModels
                             foreach (var file in files)
                             {
                                 SearchFilePath.Value = file;
-                                var list = await SearchFile(file, SearchText.Value, _CancellationTokenSource.Token);
+                                var list = await Logic.SearchFile(file, SearchText.Value, _CancellationTokenSource.Token, UseRegex.Value, CaseSensitive.Value, CombineMatches.Value);
                                 LineInfoList.AddAllSafe(list);
                                 Counter.Value = Counter.Value + 1;
                             }
@@ -299,9 +316,9 @@ namespace VisualGrep.ViewModels
                     TextPanelVisibility.Value = Visibility.Visible;
                     if (info != null)
                     {
-                        await ReadFile(info.FullPath, (line) =>
+                        await Logic.ReadFile(info.FullPath, (line) =>
                         {
-                            var matchresult = MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value);
+                            var matchresult = Logic.MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value, CombineMatches.Value);
                             var text = new RichTextItem();
                             text.Text = line ?? string.Empty;
                             text.Foreground = matchresult.Any() ? Brushes.Red : Brushes.Black;
@@ -344,7 +361,7 @@ namespace VisualGrep.ViewModels
                             }
 
                             text.Text = line;
-                            var matchresult = MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value);
+                            var matchresult = Logic.MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value, CombineMatches.Value);
                             text.Foreground = matchresult.Any() ? Brushes.Red : Brushes.Black;
                             list.Add(text);
                         }
@@ -355,14 +372,14 @@ namespace VisualGrep.ViewModels
                         TabPanels.Add(panel);
                     };
 
-                    ReadExcel(info.FullPath, action);
+                    Logic.ReadExcel(info.FullPath, action);
                 }
                 else
                 {
                     DetectionResult? charsetDetectedResult = null;
                     using (var stream = new FileStream(info.FullPath, FileMode.Open))
                     {
-                        charsetDetectedResult = DetectFromStream(stream);
+                        charsetDetectedResult = Logic.DetectFromStream(stream);
                     }
 
                     if (charsetDetectedResult.Detected is not null)
@@ -370,9 +387,9 @@ namespace VisualGrep.ViewModels
                         TextPanelVisibility.Value = Visibility.Visible;
                         if (info != null)
                         {
-                            await ReadFile(info.FullPath, (line) =>
+                            await Logic.ReadFile(info.FullPath, (line) =>
                             {
-                                var matchresult = MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value);
+                                var matchresult = Logic.MatchText(line, SearchText.Value, UseRegex.Value, !CaseSensitive.Value, CombineMatches.Value);
                                 var text = new RichTextItem();
                                 text.Text = line ?? string.Empty;
                                 text.Foreground = matchresult.Any() ? Brushes.Red : Brushes.Black;
@@ -393,7 +410,7 @@ namespace VisualGrep.ViewModels
                     var name = Path.GetTempFileName();
                     using (StreamWriter sw = new StreamWriter(name, false, Encoding.UTF8))
                     {
-                        foreach (var line in GetContentLines())
+                        foreach (var line in FileLogic.GetContentLines(LineInfoList, SelectedOutputType.Value.OutputType))
                         {
                             sw.WriteLine(line);
                         }
@@ -415,7 +432,7 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
-                    var path = SelectPath(true, initialDirectory: string.IsNullOrEmpty(FolderPath.Value) ? null : FolderPath.Value);
+                    var path = FileLogic.SelectPath(true, initialDirectory: string.IsNullOrEmpty(FolderPath.Value) ? null : FolderPath.Value);
 
                     if (path is not null)
                     {
@@ -432,13 +449,13 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
-                    var path = SelectPath(extenstion: ".csv", initialDirectory: string.IsNullOrEmpty(_OutputFolderPath) ? null : _OutputFolderPath);
+                    var path = FileLogic.SelectPath(extenstion: ".csv", initialDirectory: string.IsNullOrEmpty(_OutputFolderPath) ? null : _OutputFolderPath);
                     if (path != null)
                     {
                         _OutputFolderPath = Path.GetDirectoryName(path);
                         using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
                         {
-                            foreach (var line in GetContentLines(Format.Csv))
+                            foreach (var line in FileLogic.GetContentLines(LineInfoList, SelectedOutputType.Value.OutputType, Format.Csv))
                             {
                                 sw.WriteLine(line);
                             }
@@ -459,13 +476,13 @@ namespace VisualGrep.ViewModels
             {
                 try
                 {
-                    var path = SelectPath(extenstion: ".tsv", initialDirectory: string.IsNullOrEmpty(_OutputFolderPath) ? null : _OutputFolderPath);
+                    var path = FileLogic.SelectPath(extenstion: ".tsv", initialDirectory: string.IsNullOrEmpty(_OutputFolderPath) ? null : _OutputFolderPath);
                     if (path != null)
                     {
                         _OutputFolderPath = Path.GetDirectoryName(path);
                         using (StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8))
                         {
-                            foreach (var line in GetContentLines(Format.Tsv))
+                            foreach (var line in FileLogic.GetContentLines(LineInfoList, SelectedOutputType.Value.OutputType, Format.Tsv))
                             {
                                 sw.WriteLine(line);
                             }
@@ -484,7 +501,7 @@ namespace VisualGrep.ViewModels
 
             ClosingCommand.Subscribe(e =>
             {
-                SaveHistory();
+                Logic.SaveHistory(SearchHistory, SearchDirectoryHistory, SearchFileNameHistory, ExcludeFilePathHistory);
             });
 
             ClearHistoryCommand.Subscribe(async e =>
@@ -510,7 +527,7 @@ namespace VisualGrep.ViewModels
                     SearchDirectoryHistory.Clear();
                     SearchFileNameHistory.Clear();
                     ExcludeFilePathHistory.Clear();
-                    SaveHistory();
+                    Logic.SaveHistory(SearchHistory, SearchDirectoryHistory, SearchFileNameHistory, ExcludeFilePathHistory);
                 }
             });
 
@@ -534,329 +551,9 @@ namespace VisualGrep.ViewModels
 
             ClipboardCopyFileFolderPathCommand.Subscribe(e =>
             {
-                var path =  SelectedLineInfo.Value.FilePath;
+                var path = SelectedLineInfo.Value.FilePath;
                 Clipboard.SetText(path);
             });
-        }
-
-        private bool CheckFileName(string fileName)
-        {
-            if (!string.IsNullOrEmpty(ExcludeFilePath.Value))
-            {
-                // 除外ファイルパス
-                var excludeRegex = new Regex(ExcludeFilePath.Value);
-
-                if(excludeRegex.Match(fileName).Success)
-                {
-                    return false;
-                }
-            }
-
-            if (string.IsNullOrEmpty(SearchFileName.Value))
-            {
-                return true;
-            }
-
-            var regex = new Regex(SearchFileName.Value);
-
-            return regex.Match(fileName).Success;
-        }
-
-        private string? SelectPath(bool isFolderPicker = false, string? extenstion = null, string? initialDirectory = null)
-        {
-            using (var cofd = new CommonOpenFileDialog()
-            {
-                Title = "フォルダを選択してください",
-                InitialDirectory = initialDirectory ?? @"C:\Users\Public",
-                // フォルダ選択モードにする
-                IsFolderPicker = isFolderPicker,
-            })
-            {
-                if (extenstion != null)
-                {
-                    cofd.DefaultExtension = extenstion;
-                    cofd.DefaultFileName = extenstion;
-                }
-                if (cofd.ShowDialog() != CommonFileDialogResult.Ok)
-                {
-                    return null;
-                }
-
-                return cofd.FileName;
-            }
-        }
-
-        private IEnumerable<string> GetContentLines(Format format = Format.Tsv)
-        {
-            if (SelectedOutputType.Value.OutputType == OutputType.StringOnly)
-            {
-                return LineInfoList.Select(x => x.Text);
-            }
-            else if (SelectedOutputType.Value.OutputType == OutputType.FileNameOnly)
-            {
-                return LineInfoList.Select(x => x.FullPath).Distinct();
-            }
-            else if (SelectedOutputType.Value.OutputType == OutputType.DetailData)
-            {
-                return LineInfoList.Select(x => format.LineCreate(x));
-            }
-            throw new ArgumentException();
-        }
-
-        private void ReadExcel(string fileName, Action<DataTable> action)
-        {
-            try
-            {
-                using (FileStream stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
-                {
-                    using (var reader = ExcelReaderFactory.CreateReader(stream))
-                    {
-                        //全シート全セルを読み取り
-                        var dataset = reader.AsDataSet();
-                        for (var i = 0; i < dataset.Tables.Count; i++)
-                        {
-                            var worksheet = dataset.Tables[i];
-
-                            if (worksheet is null)
-                            {
-                                continue;
-                            }
-
-                            action.Invoke(worksheet);
-                        }
-                    }
-                }
-            }
-            catch (Exception)
-            {
-
-            }
-        }
-        private Task<List<LineInfo>> SearchFile(string fileName, string text, CancellationToken token)
-        {
-            Func<string, string, List<LineInfo>> action = (fileName, text) =>
-            {
-                var list = new List<LineInfo>();
-
-                var fName = Path.GetFileName(fileName);
-                if (fName.Contains("~$") && (fileName.EndsWith(".xls") || fileName.EndsWith(".xlsx") || fileName.EndsWith(".xlsb")))
-                {
-                    return list;
-                }
-
-                if (fileName.EndsWith(".xls") || fileName.EndsWith(".xlsx") || fileName.EndsWith(".xlsb"))
-                {
-                    Action<DataTable> action = (worksheet) =>
-                    {
-                        //セルの入力文字を読み取り
-                        for (var row = 0; row < worksheet.Rows.Count; row++)
-                        {
-                            for (var col = 0; col < worksheet.Columns.Count; col++)
-                            {
-                                var cell = worksheet.Rows[row][col];
-                                var line = cell?.ToString() ?? "";
-                                if (line != null)
-                                {
-                                    var result = MatchText(line, text, UseRegex.Value, !CaseSensitive.Value);
-                                    foreach (var r in result)
-                                    {
-                                        var info = new LineInfo();
-                                        info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
-                                        info.FileName = Path.GetFileName(fileName);
-                                        info.Line = (row + 1).ToString();
-                                        info.Sheet = worksheet.TableName;
-                                        info.Text = r;
-                                        list.Add(info);
-                                    }
-                                }
-                            }
-                        }
-                    };
-
-                    ReadExcel(fileName, action);
-                }
-                else
-                {
-                    DetectionResult charsetDetectedResult;
-
-                    try
-                    {
-                        using (var stream = new FileStream(fileName, FileMode.Open))
-                        {
-                            charsetDetectedResult = DetectFromStream(stream);
-                        }
-
-                        if (charsetDetectedResult.Detected == null)
-                        {
-                            return list;
-                        }
-
-                        // ファイルをオープンする
-                        using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
-                        {
-                            int lineNo = 1;
-                            while (0 <= sr.Peek())
-                            {
-                                // キャンセルトークンの状態を監視する
-                                if (token.IsCancellationRequested)
-                                {
-                                    // キャンセルされた場合は、OperationCanceledExceptionをスローする
-                                    throw new OperationCanceledException(token);
-                                }
-
-                                var line = sr.ReadLine();
-
-                                if (line != null)
-                                {
-                                    var result = MatchText(line, text, UseRegex.Value, !CaseSensitive.Value);
-                                    foreach (var r in result)
-                                    {
-                                        var info = new LineInfo();
-                                        info.FilePath = Path.GetDirectoryName(fileName) ?? string.Empty;
-                                        info.FileName = Path.GetFileName(fileName);
-                                        info.Line = lineNo.ToString();
-                                        info.Sheet = string.Empty;
-                                        info.Text = r;
-                                        list.Add(info);
-                                    }
-                                }
-
-                                lineNo++;
-                            }
-                        }
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        throw ex;
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex);
-                    }
-                    finally
-                    {
-
-                    }
-                }
-
-                return list;
-            };
-
-            // タスクを開始して、キャンセルトークンを渡す
-            return Task.Run(() => action(fileName, text), token);
-        }
-
-        private Task ReadFile(string fileName, Action<string?> action)
-        {
-            return Task.Run(() =>
-            {
-                DetectionResult charsetDetectedResult;
-
-                using (var stream = new FileStream(fileName, FileMode.Open))
-                {
-                    charsetDetectedResult = DetectFromStream(stream);
-                }
-
-                // ファイルをオープンする
-                using (var sr = new StreamReader(fileName, charsetDetectedResult.Detected.Encoding))
-                {
-                    while (0 <= sr.Peek())
-                    {
-                        var line = sr.ReadLine();
-
-                        action(line);
-                    }
-                }
-            });
-        }
-
-        private List<string> MatchText(string line, string text, bool useRegex, bool ignoreCase)
-        {
-            var result = new List<string>();
-            if (useRegex)
-            {
-                var regexOption = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
-                // Regexオブジェクトを作成
-                var regex = new Regex(text, regexOption);
-                // 最初の一致する文字列を検索
-                var match = regex.Match(line);
-
-                // すべての一致する文字列を出力
-                while (match.Success)
-                {
-                    result.Add(line);
-                    if (CombineMatches.Value)
-                    {
-                        return result;
-                    }
-                    match = match.NextMatch();
-                }
-            }
-            else
-            {
-                var stringComparison = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal;
-
-                int index = line.IndexOf(text, stringComparison);
-
-                while (index != -1)
-                {
-                    result.Add(line);
-                    if (CombineMatches.Value)
-                    {
-                        return result;
-                    }
-                    index = line.IndexOf(text, index + 1, StringComparison.OrdinalIgnoreCase);
-                }
-            }
-
-            return result;
-        }
-
-        private void LoadHistory()
-        {
-            var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Process.GetCurrentProcess().ProcessName, "SearchHistory.xml");
-            if (File.Exists(filePath))
-            {
-                var history = XmlHelper.Deserialize<SearchHistory>(filePath);
-                SearchHistory.ClearAndAddAllSafe(history.SearchTextHistory);
-                SearchDirectoryHistory.ClearAndAddAllSafe(history.SearchDirectoryHistory);
-                SearchFileNameHistory.ClearAndAddAllSafe(history.SearchFileNameHistory);
-                ExcludeFilePathHistory.ClearAndAddAllSafe(history.ExcludeFilePathHistory);
-            }
-        }
-
-        public void SaveHistory()
-        {
-            var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Process.GetCurrentProcess().ProcessName, "SearchHistory.xml");
-            var history = new SearchHistory();
-            history.SearchTextHistory = new List<string>(SearchHistory.OrderBy(x => x).ToList());
-            history.SearchDirectoryHistory = new List<string>(SearchDirectoryHistory.OrderBy(x => x).ToList());
-            history.SearchFileNameHistory = new List<string>(SearchFileNameHistory.OrderBy(x => x).ToList());
-            history.ExcludeFilePathHistory = new List<string>(ExcludeFilePathHistory.OrderBy(x => x).ToList());
-            XmlHelper.Serialize(history, filePath);
-        }
-        private void UpdateElapsed()
-        {
-            var totalFiles = Maximum.Value;
-            var filesSearched = Counter.Value;
-            var elapsed = _Stopwatch.Elapsed;
-
-            try
-            {
-                SearchingInfoPercent.Value = $"{100 * filesSearched / totalFiles}%";
-                SearchingInfo.Value = $"検索ファイル数 {filesSearched}/{totalFiles} 経過時間 {elapsed:hh\\:mm\\:ss}";
-                var remaining = TimeSpan.FromSeconds((totalFiles - filesSearched) * elapsed.TotalSeconds / filesSearched);
-                SearchingInfo.Value = $"{SearchingInfo.Value} 残り時間 {remaining:hh\\:mm\\:ss}";
-            }
-            catch (OverflowException)
-            {
-
-            }
-        }
-
-        private DetectionResult DetectFromStream(Stream stream)
-        {
-            return CharsetDetector.DetectFromStream(stream, 1024 * 1024);
         }
     }
 }
