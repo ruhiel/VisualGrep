@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using VisualGrep.Models;
 
 namespace VisualGrep.Utls
 {
@@ -53,6 +54,21 @@ namespace VisualGrep.Utls
 
             //同階層のファイル取得をして再帰的に同階層のフォルダを検索しに行く
             return Directory.EnumerateFiles(folderPath).Concat(directories);
+        }
+
+        public static FileType GetFileType(string filePath)
+        {
+            var ext = Path.GetExtension(filePath);
+            if (ext == ".txt" || ext == ".csv" || ext == ".tsv" || ext == ".log" || ext == ".xml" || ext == ".json" || ext == ".html" || ext == ".md")
+            {
+                return FileType.Text;
+            }
+            else if (ext == ".xls" || ext == ".xlsx" || ext == ".xlsb" || ext == ".xlsm")
+            {
+                return FileType.Excel;
+            }
+
+            return FileType.Others;
         }
     }
 }

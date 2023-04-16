@@ -133,7 +133,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="30"/>
                 </Grid.RowDefinitions>
-                <DataGrid Grid.Row="0" IsEnabled="{Binding ControlEnable.Value}" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}">
+                <DataGrid Grid.Row="0" IsEnabled="{Binding ControlEnable.Value}" ItemsSource="{Binding LineInfoList}" AutoGenerateColumns="False" SelectedItem="{Binding SelectedLineInfo.Value, Mode=TwoWay}" CanUserAddRows="False">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ファイル名" Width="200" Binding="{Binding FileName}" IsReadOnly="True"/>
                         <DataGridTextColumn Header="場所" Width="200" Binding="{Binding FilePath}" IsReadOnly="True"/>

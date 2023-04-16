@@ -309,9 +309,9 @@ namespace VisualGrep.ViewModels
                     return;
                 }
 
-                var ext = Path.GetExtension(info.FullPath);
+                var fileType = FileUtils.GetFileType(info.FullPath);
 
-                if (ext == ".txt" || ext == ".csv" || ext == ".tsv" || ext == ".log" || ext == ".xml" || ext == ".json" || ext == ".html" || ext == ".md")
+                if (fileType == FileType.Text)
                 {
                     TextPanelVisibility.Value = Visibility.Visible;
                     if (info != null)
@@ -335,9 +335,11 @@ namespace VisualGrep.ViewModels
                         var editor = mw.textEditor;
                         // スクロールバーを目的の位置に移動
                         editor.ScrollTo(targetLineNumber, 0);
+                        editor.TextArea.TextView.LineTransformers.Clear();
+                        editor.TextArea.TextView.LineTransformers.Add(new LineColorizer(int.Parse(info.Line)));
                     }
                 }
-                else if (ext == ".xls" || ext == ".xlsx" || ext == ".xlsb")
+                else if (fileType == FileType.Excel)
                 {
                     TextPanelVisibility.Value = Visibility.Collapsed;
                     TabPanels.Clear();
@@ -367,7 +369,7 @@ namespace VisualGrep.ViewModels
                         }
 
                         panel.TextView.Value = new TextDocument();
-                        panel.TextView.Value.Text = string.Join("\r\n", list.Select(x => x.Text).ToList());
+                        panel.TextView.Value.Text = string.Join(Environment.NewLine, list.Select(x => x.Text).ToList());
 
                         TabPanels.Add(panel);
                     };
@@ -397,7 +399,7 @@ namespace VisualGrep.ViewModels
                                 list.Add(text);
                             });
 
-                            TextView.Value.Text = string.Join("\r\n", list.Select(x => x.Text).ToList());
+                            TextView.Value.Text = string.Join(Environment.NewLine, list.Select(x => x.Text).ToList());
                         }
                     }
                 }
