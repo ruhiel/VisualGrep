@@ -199,9 +199,11 @@ namespace VisualGrep.ViewModels
                         ex => Console.WriteLine("OnError({0})", ex.Message),
                         () => Console.WriteLine("Completed()"));
 
+                    var regex = string.IsNullOrEmpty(SearchFileName.Value) ? null : new Regex(SearchFileName.Value);
+                    var excludeRegex = string.IsNullOrEmpty(ExcludeFilePath.Value) ? null : new Regex(ExcludeFilePath.Value);
                     var files = FileUtils.GetAllFiles(FolderPath.Value, IncludeSubfolders.Value)
                         .Select((value, index) => value)
-                        .Where(x => FileLogic.CheckFileName(x, SearchFileName.Value, ExcludeFilePath.Value))
+                        .Where(x => FileLogic.CheckFileName(x, regex, excludeRegex))
                         .ToList();
 
                     Maximum.Value = files.Count;

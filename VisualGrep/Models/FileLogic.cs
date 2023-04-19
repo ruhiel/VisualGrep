@@ -49,25 +49,20 @@ namespace VisualGrep.Models
             }
             throw new ArgumentException();
         }
-        public static bool CheckFileName(string fileName, string searchFileName, string excludeFilePath)
+        public static bool CheckFileName(string fileName, Regex? regex, Regex? excludeRegex)
         {
-            if (!string.IsNullOrEmpty(excludeFilePath))
+            if (excludeRegex is not null)
             {
-                // 除外ファイルパス
-                var excludeRegex = new Regex(excludeFilePath);
-
                 if (excludeRegex.Match(fileName).Success)
                 {
                     return false;
                 }
             }
 
-            if (string.IsNullOrEmpty(searchFileName))
+            if (regex is null)
             {
                 return true;
             }
-
-            var regex = new Regex(searchFileName);
 
             return regex.Match(fileName).Success;
         }
