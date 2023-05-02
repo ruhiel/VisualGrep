@@ -195,6 +195,10 @@ namespace VisualGrep.ViewModels
                             {
 
                             }
+                            catch (DivideByZeroException)
+                            {
+
+                            }
                         },
                         ex => Console.WriteLine("OnError({0})", ex.Message),
                         () => Console.WriteLine("Completed()"));
