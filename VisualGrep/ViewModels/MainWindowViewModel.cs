@@ -155,14 +155,34 @@ namespace VisualGrep.ViewModels
                         SearchDirectoryHistory.Add(FolderPath.Value);
                     }
 
-                    if (!string.IsNullOrEmpty(ExcludeFilePath.Value) && !ExcludeFilePathHistory.Contains(ExcludeFilePath.Value))
+                    if (ExcludeFilePath.Value.IsNotNullOrEmpty() && !ExcludeFilePathHistory.Contains(ExcludeFilePath.Value))
                     {
                         ExcludeFilePathHistory.Add(ExcludeFilePath.Value);
                     }
 
-                    if (!string.IsNullOrEmpty(SearchFileName.Value) && !SearchFileNameHistory.Contains(SearchFileName.Value))
+                    if (SearchFileName.Value.IsNotNullOrEmpty() && !SearchFileNameHistory.Contains(SearchFileName.Value))
                     {
                         SearchFileNameHistory.Add(SearchFileName.Value);
+                    }
+
+                    if (SearchText.Value.IsNotNullOrEmpty())
+                    {
+                        SearchText.Value = SearchHistory.MoveFirst(SearchText.Value);
+                    }
+
+                    if (FolderPath.Value.IsNotNullOrEmpty())
+                    {
+                        FolderPath.Value = SearchDirectoryHistory.MoveFirst(FolderPath.Value);
+                    }
+
+                    if (SearchFileName.Value.IsNotNullOrEmpty()) 
+                    {
+                        SearchFileName.Value = SearchFileNameHistory.MoveFirst(SearchFileName.Value);
+                    }
+
+                    if (ExcludeFilePath.Value.IsNotNullOrEmpty())
+                    {
+                        ExcludeFilePath.Value = ExcludeFilePathHistory.MoveFirst(ExcludeFilePath.Value);
                     }
 
                     _Stopwatch = new Stopwatch();

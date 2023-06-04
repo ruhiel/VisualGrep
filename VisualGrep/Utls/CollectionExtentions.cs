@@ -36,5 +36,17 @@ namespace VisualGrep.Utls
                 collection.Add(item);
             }
         }
+
+        public static T MoveFirst<T>(this Collection<T> collection, T item)
+        {
+            var index = collection.IndexOf(item);
+            for(var i = index; i > 0; i--)
+            {
+                collection[i] = collection[i - 1];
+            }
+            collection[0] = item;
+
+            return item;
+        }
     }
 }

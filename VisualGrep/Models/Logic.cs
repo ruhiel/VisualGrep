@@ -80,10 +80,10 @@ namespace VisualGrep.Models
         {
             var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Process.GetCurrentProcess().ProcessName, "SearchHistory.xml");
             var history = new SearchHistory();
-            history.SearchTextHistory = new List<string>(searchHistory.OrderBy(x => x).ToList());
-            history.SearchDirectoryHistory = new List<string>(searchDirectoryHistory.OrderBy(x => x).ToList());
-            history.SearchFileNameHistory = new List<string>(searchFileNameHistory.OrderBy(x => x).ToList());
-            history.ExcludeFilePathHistory = new List<string>(excludeFilePathHistory.OrderBy(x => x).ToList());
+            history.SearchTextHistory = new List<string>(searchHistory.ToList());
+            history.SearchDirectoryHistory = new List<string>(searchDirectoryHistory.ToList());
+            history.SearchFileNameHistory = new List<string>(searchFileNameHistory.ToList());
+            history.ExcludeFilePathHistory = new List<string>(excludeFilePathHistory.ToList());
             XmlHelper.Serialize(history, filePath);
         }
 
